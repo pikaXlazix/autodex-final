@@ -50,12 +50,63 @@ function validPrice(value) {
   const n = Number(String(value || "").replace(/\s/g, "").replace(",", "."));
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }
+
+// Estimation de secours : utilisée uniquement quand les données d'annonces
+// ne contiennent pas le modèle demandé ou que la source est indisponible.
+function fallbackEstimate(make, model, year) {
+  const m = normalizeCarName(model);
+  const b = normalizeCarName(make);
+  const y = Number(year);
+  const known = [
+    [/tourbillon/, 3800000], [/bolide/, 4000000], [/la voiture noire/, 11000000], [/centodieci/, 8000000], [/chiron/, 3000000], [/veyron/, 1400000],
+    [/valhalla/, 1000000], [/valkyrie/, 3000000], [/one77/, 1800000], [/vulcan/, 2500000], [/victor/, 3000000],
+    [/f80/, 3500000], [/daytona sp3/, 2200000], [/laferrari/, 3000000], [/laferrari aperta/, 4500000], [/monza sp2/, 1800000], [/sf90/, 500000], [/296/, 330000], [/812/, 400000], [/purosangue/, 450000], [/roma/, 230000], [/portofino/, 220000], [/488 pista/, 450000], [/458 speciale/, 350000],
+    [/revuelto/, 600000], [/sian/, 3500000], [/countach/, 2500000], [/aventador/, 450000], [/huracan sto/, 350000], [/huracan/, 250000], [/temerario/, 350000], [/urus/, 250000],
+    [/jesko/, 3000000], [/regera/, 2000000], [/gemera/, 1700000], [/cc850/, 3500000], [/agera/, 2500000], [/one ?1/, 2500000],
+    [/nevera/, 2200000], [/p1/, 1500000], [/speedtail/, 2500000], [/senna/, 1000000], [/765lt/, 500000], [/720s/, 300000], [/750s/, 350000],
+    [/t50/, 2500000], [/t33/, 1800000], [/zonda/, 2500000], [/huayra/, 2500000], [/utopia/, 3000000],
+    [/911 gt2 rs/, 350000], [/911 gt3 rs/, 300000], [/911 turbo s/, 250000], [/911 gt3/, 220000], [/911/, 150000], [/taycan/, 110000], [/cayenne/, 100000], [/panamera/, 110000],
+    [/amg one/, 3000000], [/g 63/, 200000], [/g-class|classe g/, 180000], [/maybach/, 200000], [/s-class|classe s/, 120000],
+    [/range rover/, 120000], [/defender/, 70000], [/bentayga/, 220000], [/continental gt/, 220000], [/flying spur/, 250000], [/phantom/, 500000], [/spectre/, 400000], [/cullinan/, 400000],
+    [/model s plaid/, 110000], [/model s/, 85000], [/model x/, 90000], [/model y/, 50000], [/model 3/, 45000]
+  ];
+  let base = null;
+  for (const [pattern, price] of known) { if (pattern.test(m)) { base = price; break; } }
+  if (base === null) {
+    const highEnd = /ferrari|lamborghini|bugatti|koenigsegg|pagani|rimac|mclaren|astonmartin|maserati|bentley|rollsroyce|lotus|porsche|maybach/.test(b);
+    const luxury = /mercedes|bmw|audi|range rover|land rover|lexus|genesis|lucid|polestar|alpine/.test(b);
+    const family = /suv|crossover|x[1-7]|q[2-8]|gle|gls|glc|cayenne|urus|defender|range rover/.test(m);
+    const sporty = /gt|sport|coupe|coup[eé]|rs|amg|m[0-9]|type r|supra|z4|mustang|corvette|camaro|wrx|sti/.test(m);
+    base = highEnd ? (sporty ? 180000 : 120000) : luxury ? (family ? 75000 : sporty ? 65000 : 50000) : (family ? 35000 : sporty ? 45000 : 25000);
+  }
+  // Prix de lancement approximatif puis décote indicative selon l'année.
+  // Les hypercars/exemplaires de collection peuvent au contraire prendre de la valeur.
+  let price = base;
+  if (Number.isInteger(y) && y >= 1886 && y <= 2026) {
+    const age = Math.max(0, 2026 - y);
+    let factor;
+    if (base >= 1000000) factor = Math.max(0.72, 1 - age * 0.012);
+    else if (base >= 250000) factor = Math.max(0.35, 1 - age * 0.045);
+    else if (base >= 80000) factor = Math.max(0.18, 1 - age * 0.065);
+    else factor = Math.max(0.08, 1 - age * 0.075);
+    price *= factor;
+  }
+  return Math.max(500, Math.round(price / 500) * 500);
+}
+function sendFallback(res, make, model, year, reason = "") {
+  const price = fallbackEstimate(make, model, year);
+  return res.json({
+    price, make, model, year: Number(year) || null, basis: "fallback",
+    source: "Estimation automatique approximative basée sur la marque, le modèle et l'année" + (reason ? ` (${reason})` : ""),
+    sourceUrl: "https://karoto.fr/donnees", license: "Estimation indicative"
+  });
+}
 app.get("/api/price-estimate", async (req, res) => {
   const make = String(req.query.make || "").trim();
   const model = String(req.query.model || "").trim();
   const year = Number(req.query.year);
   if (!make || !model) return res.status(400).json({ error: "Indique une marque et un modèle." });
-  if (model === "Autre modèle" || make === "Autre / non listée") return res.status(404).json({ error: "Aucune cote trouvée pour cette saisie. Tu peux entrer le prix manuellement." });
+  if (model === "Autre modèle" || make === "Autre / non listée") return sendFallback(res, make, model, year, "modèle personnalisé");
   try {
     const [yearRows, modelRows] = await Promise.all([loadPriceCsv("byYear"), loadPriceCsv("byModel")]);
     const wantedMake = normalizeCarName(make), wantedModel = normalizeCarName(model);
@@ -78,10 +129,10 @@ app.get("/api/price-estimate", async (req, res) => {
       source: "Karoto — médiane des annonces françaises du modèle, toutes années confondues",
       sourceUrl: "https://karoto.fr/donnees", license: "Licence Ouverte 2.0"
     });
-    return res.status(404).json({ error: "Pas assez d'annonces comparables pour donner une estimation fiable. Tu peux entrer le prix manuellement." });
+    return sendFallback(res, make, model, year, "pas assez d'annonces comparables");
   } catch (error) {
     console.error("Price lookup error:", error?.message || error);
-    return res.status(502).json({ error: "La source des prix est temporairement indisponible. Réessaie plus tard ou saisis le prix manuellement." });
+    return sendFallback(res, make, model, year, "source de prix indisponible");
   }
 });
 app.get("/api/status", (_req, res) => res.json({ ready: true, message: "AutoDex FINAL prêt", priceEstimatesAvailable: true, aiAvailable: false }));
