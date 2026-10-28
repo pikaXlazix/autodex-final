@@ -283,7 +283,7 @@ $("resetCrop").addEventListener("click",()=>{cropX=50;cropY=50;cropZoom=1;$("cro
 $("photo").addEventListener("change",e=>{
   const file=e.target.files?.[0]; if(!file)return;
   if(!file.type.startsWith("image/")){alert("Choisis un fichier image.");return;}
-  if(file.size>5*1024*1024){alert("Cette photo dépasse 5 Mo. Choisis une image plus légère pour éviter de remplir le stockage.");e.target.value="";return;}
+  if(file.size>50*1024*1024){alert("Cette photo dépasse 50 Mo. Choisis une photo plus petite. Les photos prises avec un appareil sont automatiquement redimensionnées et compressées avant l’enregistrement.");e.target.value="";return;}
   compressPhotoFile(file).then(dataUrl=>{selectedPhoto=dataUrl;cropX=50;cropY=50;cropZoom=1;$("cropFrame").style.display="block";$("cropControls").style.display="grid";$("cropHelp").style.display="block";$("cropZoom").value=1;$("cropX").value=50;$("cropY").value=50;$("preview").src=selectedPhoto;updateCropPreview();}).catch(err=>alert(err.message));
 });
 $("carForm").addEventListener("submit",async e=>{
