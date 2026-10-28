@@ -11,7 +11,7 @@ const scrypt = promisify(crypto.scrypt);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3000;
-app.use(express.json({ limit: "100mb" }));
+app.use(express.json({ limit: "200mb" }));
 app.set("trust proxy", 1);
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -96,7 +96,7 @@ app.post("/api/auth/login", async (req,res) => {
 app.post("/api/auth/logout", async (req,res) => { try { const token=cookieValue(req,SESSION_COOKIE); if(pool&&token) await pool.query("DELETE FROM autodex_sessions WHERE token_hash=$1",[hashToken(token)]); clearSessionCookie(res); res.json({ok:true}); } catch(e) { clearSessionCookie(res); res.json({ok:true}); } });
 app.get("/api/auth/me", async (req,res) => { if(dbRequired(res)) return; try { const user=await currentUser(req); res.json({user:user?{username:user.username}:null}); } catch(e) { console.error(e); res.status(500).json({error:"Erreur de vérification du compte."}); } });
 app.get("/api/cars", requireUser, async (req,res) => { try { const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[req.autodexUser.id]); res.json({cars:r.rows[0]?.cars_json||[]}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible de charger la collection."}); } });
-app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>80*1024*1024) return res.status(413).json({error:"Collection trop volumineuse (limite de 80 Mo). Compresse les photos ou réduis leur nombre."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible d'enregistrer la collection."}); } });
+app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>180*1024*1024) return res.status(413).json({error:"Collection trop volumineuse (limite de 180 Mo). Compresse les photos ou réduis leur nombre."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible d'enregistrer la collection."}); } });
 
 
 // Social : recherche par pseudo, demandes d'amis et profils accessibles entre amis acceptés.
@@ -271,7 +271,7 @@ app.get("/api/price-estimate", async (req, res) => {
 // Retourne une erreur JSON claire lorsque le corps d’une requête dépasse la limite Express.
 app.use((err, _req, res, next) => {
   if (err?.type === "entity.too.large" || err?.status === 413) {
-    return res.status(413).json({ error: "Requête trop volumineuse (limite serveur de 100 Mo). Compresse la photo ou envoie moins de photos à la fois." });
+    return res.status(413).json({ error: "Requête trop volumineuse (limite serveur de 200 Mo). Compresse la photo ou envoie moins de photos à la fois." });
   }
   if (err) {
     console.error("Request parsing error:", err.message || err);
