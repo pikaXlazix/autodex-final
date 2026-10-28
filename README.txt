@@ -31,3 +31,28 @@ DÉPANNAGE
 - Build failed : vérifiez que Build Command est `npm install` et Start Command `npm start`.
 - Site en ligne mais estimation indisponible : la source de données publique peut être temporairement inaccessible ou ne pas connaître le modèle. Le prix peut être saisi manuellement.
 - Pas de modèle dans la liste : choisissez « Autre / non listée » ou « Autre modèle » et saisissez son nom.
+
+
+COMPTES UTILISATEURS (NOUVEAU)
+==============================
+- Création de compte avec nom unique (3-24 caractères) et mot de passe (8 caractères minimum).
+- Mot de passe protégé avec scrypt ; sessions aléatoires stockées côté serveur et cookie HttpOnly persistant 30 jours.
+- Chaque compte a sa propre collection ; les fiches et photos sont enregistrées dans PostgreSQL et sont accessibles depuis plusieurs appareils.
+- Connexion Google non incluse : elle nécessite une configuration OAuth Google distincte.
+
+CONFIGURATION OBLIGATOIRE SUR RENDER POUR LES COMPTES
+=====================================================
+1. Dans Render, crée une base PostgreSQL via New + > PostgreSQL. Choisis un nom, la région compatible avec le service et un plan disponible.
+2. Une fois créée, ouvre la base de données et copie l'Internal Database URL (si service et base sont dans Render) ou l'URL de connexion recommandée par Render. Garde cette URL secrète.
+3. Ouvre le Web Service AutoDex > Environment > Add Environment Variable.
+4. Key : DATABASE_URL
+   Value : colle l'URL PostgreSQL copiée depuis Render.
+5. Enregistre les changements et laisse Render redéployer. La première mise en route crée automatiquement les tables.
+6. Ouvre le site : crée un compte de test, ajoute une voiture, recharge la page, puis vérifie que la voiture est toujours là. Teste ensuite depuis un autre appareil.
+
+IMPORTANT
+---------
+- Sans DATABASE_URL, les inscriptions sont désactivées et l'écran indique que la base de données n'est pas configurée.
+- La base PostgreSQL doit rester active et conserver ses données ; consulte les tarifs et règles de conservation de Render avant de choisir le plan.
+- Ce projet stocke les photos dans le JSON de la collection. La taille totale de la collection est limitée à 10 Mo et 500 voitures par compte pour éviter de surcharger la base. Réduis la taille des photos si nécessaire.
+- Les comptes de l'ancienne version locale ne sont pas importés automatiquement. Les anciennes voitures restées dans le localStorage d'un navigateur ne sont pas migrées dans un compte automatiquement.

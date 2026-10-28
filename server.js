@@ -2,11 +2,95 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
+import { promisify } from "node:util";
+import pg from "pg";
+const { Pool } = pg;
+const scrypt = promisify(crypto.scrypt);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3000;
+app.use(express.json({ limit: "12mb" }));
+app.set("trust proxy", 1);
 app.use(express.static(path.join(__dirname, "public")));
+
+const pool = process.env.DATABASE_URL ? new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false }
+}) : null;
+const SESSION_DAYS = 30;
+const SESSION_COOKIE = "autodex_session";
+function cookieValue(req, name) {
+  const raw = req.headers.cookie || "";
+  for (const part of raw.split(";")) { const i = part.indexOf("="); if (i > -1 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim()); }
+  return "";
+}
+function hashToken(token) { return crypto.createHash("sha256").update(token).digest("hex"); }
+function setSessionCookie(res, token) {
+  res.setHeader("Set-Cookie", `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS*24*60*60}`);
+}
+function clearSessionCookie(res) { res.setHeader("Set-Cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`); }
+async function initDatabase() {
+  if (!pool) return;
+  await pool.query(`CREATE TABLE IF NOT EXISTS autodex_users (
+    id BIGSERIAL PRIMARY KEY, username TEXT NOT NULL, username_key TEXT NOT NULL UNIQUE,
+    password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS autodex_sessions (
+    token_hash TEXT PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES autodex_users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS autodex_cars (
+    id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL UNIQUE REFERENCES autodex_users(id) ON DELETE CASCADE,
+    cars_json JSONB NOT NULL DEFAULT '[]'::jsonb, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query("DELETE FROM autodex_sessions WHERE expires_at < NOW()");
+}
+function dbRequired(res) { if (pool) return false; res.status(503).json({error:"La base de données n'est pas configurée. Ajoute DATABASE_URL dans Render."}); return true; }
+async function currentUser(req) {
+  if (!pool) return null;
+  const token = cookieValue(req, SESSION_COOKIE); if (!token) return null;
+  const result = await pool.query(`SELECT u.id, u.username FROM autodex_sessions s JOIN autodex_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>NOW()`, [hashToken(token)]);
+  return result.rows[0] || null;
+}
+async function requireUser(req,res,next) {
+  try { if (dbRequired(res)) return; const user = await currentUser(req); if (!user) return res.status(401).json({error:"Connecte-toi pour accéder à ta collection."}); req.autodexUser=user; next(); }
+  catch(e) { console.error(e); res.status(500).json({error:"Erreur du compte. Réessaie."}); }
+}
+app.post("/api/auth/register", async (req,res) => {
+  if (dbRequired(res)) return;
+  try {
+    const username = String(req.body?.username || "").trim();
+    const key = username.toLocaleLowerCase("fr-FR");
+    const password = String(req.body?.password || "");
+    if (!/^[\p{L}\p{N}_-]{3,24}$/u.test(username)) return res.status(400).json({error:"Le nom doit contenir 3 à 24 caractères : lettres, chiffres, _ ou - uniquement."});
+    if (password.length < 8 || password.length > 128) return res.status(400).json({error:"Choisis un mot de passe de 8 caractères minimum."});
+    const exists = await pool.query("SELECT 1 FROM autodex_users WHERE username_key=$1",[key]);
+    if (exists.rowCount) return res.status(409).json({error:"Ce nom d'utilisateur est déjà utilisé. Choisis-en un autre."});
+    const salt=crypto.randomBytes(16).toString("hex"); const derived=await scrypt(password,salt,64);
+    const created=await pool.query("INSERT INTO autodex_users(username,username_key,password_salt,password_hash) VALUES($1,$2,$3,$4) RETURNING id,username",[username,key,salt,derived.toString("hex")]);
+    const user=created.rows[0]; await pool.query("INSERT INTO autodex_cars(user_id,cars_json) VALUES($1,'[]'::jsonb)",[user.id]);
+    const token=crypto.randomBytes(32).toString("hex"); await pool.query("INSERT INTO autodex_sessions(token_hash,user_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '30 days')",[hashToken(token),user.id]);
+    setSessionCookie(res,token); res.status(201).json({user:{username:user.username}});
+  } catch(e) { if(e.code==="23505") return res.status(409).json({error:"Ce nom d'utilisateur est déjà utilisé."}); console.error(e); res.status(500).json({error:"Impossible de créer le compte pour le moment."}); }
+});
+app.post("/api/auth/login", async (req,res) => {
+  if (dbRequired(res)) return;
+  try {
+    const username=String(req.body?.username||"").trim(); const password=String(req.body?.password||"");
+    const found=await pool.query("SELECT id,username,password_salt,password_hash FROM autodex_users WHERE username_key=$1",[username.toLocaleLowerCase("fr-FR")]);
+    if (!found.rowCount) return res.status(401).json({error:"Nom d'utilisateur ou mot de passe incorrect."});
+    const user=found.rows[0]; const test=await scrypt(password,user.password_salt,64);
+    const expected=Buffer.from(user.password_hash,"hex"); if(expected.length!==test.length||!crypto.timingSafeEqual(expected,test)) return res.status(401).json({error:"Nom d'utilisateur ou mot de passe incorrect."});
+    const token=crypto.randomBytes(32).toString("hex"); await pool.query("INSERT INTO autodex_sessions(token_hash,user_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '30 days')",[hashToken(token),user.id]);
+    setSessionCookie(res,token); res.json({user:{username:user.username}});
+  } catch(e) { console.error(e); res.status(500).json({error:"Impossible de se connecter pour le moment."}); }
+});
+app.post("/api/auth/logout", async (req,res) => { try { const token=cookieValue(req,SESSION_COOKIE); if(pool&&token) await pool.query("DELETE FROM autodex_sessions WHERE token_hash=$1",[hashToken(token)]); clearSessionCookie(res); res.json({ok:true}); } catch(e) { clearSessionCookie(res); res.json({ok:true}); } });
+app.get("/api/auth/me", async (req,res) => { if(dbRequired(res)) return; try { const user=await currentUser(req); res.json({user:user?{username:user.username}:null}); } catch(e) { console.error(e); res.status(500).json({error:"Erreur de vérification du compte."}); } });
+app.get("/api/cars", requireUser, async (req,res) => { try { const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[req.autodexUser.id]); res.json({cars:r.rows[0]?.cars_json||[]}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible de charger la collection."}); } });
+app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>10*1024*1024) return res.status(413).json({error:"Collection trop volumineuse. Réduis la taille ou le nombre de photos."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible d'enregistrer la collection."}); } });
 
 const PRICE_DATA_URLS = {
   byYear: "https://karoto.fr/donnees/prix-modeles-annees.csv",
@@ -136,4 +220,5 @@ app.get("/api/price-estimate", async (req, res) => {
   }
 });
 app.get("/api/status", (_req, res) => res.json({ ready: true, message: "AutoDex FINAL prêt", priceEstimatesAvailable: true, aiAvailable: false }));
-app.listen(port, () => console.log(`AutoDex FINAL running on port ${port}`));
+if (pool) initDatabase().then(() => app.listen(port, () => console.log(`AutoDex FINAL running on port ${port}`))).catch(e => { console.error("Database initialization failed:",e); process.exit(1); });
+else app.listen(port, () => console.log(`AutoDex FINAL running on port ${port}; DATABASE_URL missing`));
