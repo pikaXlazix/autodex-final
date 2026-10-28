@@ -54,7 +54,7 @@ IMPORTANT
 ---------
 - Sans DATABASE_URL, les inscriptions sont désactivées et l'écran indique que la base de données n'est pas configurée.
 - La base PostgreSQL doit rester active et conserver ses données ; consulte les tarifs et règles de conservation de Render avant de choisir le plan.
-- Ce projet stocke les photos dans le JSON de la collection. La taille totale de la collection est limitée à 10 Mo et 500 voitures par compte pour éviter de surcharger la base. Réduis la taille des photos si nécessaire.
+- Ce projet stocke les photos dans le JSON de la collection. La taille totale de la collection est limitée à 80 Mo par compte et les requêtes JSON à 100 Mo. Les photos sont redimensionnées à 1800 px maximum avec une compression JPEG modérée. Ces limites élevées peuvent ralentir les sauvegardes ; pour une collection importante, privilégie un stockage d’images séparé de la base de données.
 - Les comptes de l'ancienne version locale ne sont pas importés automatiquement. Les anciennes voitures restées dans le localStorage d'un navigateur ne sont pas migrées dans un compte automatiquement.
 
 

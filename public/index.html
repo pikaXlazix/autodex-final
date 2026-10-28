@@ -170,7 +170,7 @@ async function api(path, options={}) {
   try { data = raw ? JSON.parse(raw) : {}; }
   catch {
     const message = response.status === 413
-      ? "Les photos de ta collection sont trop volumineuses pour être envoyées. Réduis la taille des images, puis réessaie."
+      ? "La requête dépasse la limite du serveur (100 Mo). Réduis la taille de la photo ou envoie moins de photos à la fois, puis réessaie."
       : `Le serveur a renvoyé une réponse inattendue (HTTP ${response.status}). Vérifie le déploiement du serveur AutoDex.`;
     throw new Error(message);
   }
@@ -185,7 +185,7 @@ function compressPhotoFile(file) {
       const img = new Image();
       img.onerror = () => reject(new Error("Cette image ne peut pas être ouverte."));
       img.onload = () => {
-        const maxSide = 1400;
+        const maxSide = 1800;
         const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
         const canvas = document.createElement("canvas");
         canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -193,7 +193,7 @@ function compressPhotoFile(file) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("La compression de la photo a échoué."));
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.78));
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
       };
       img.src = reader.result;
     };
