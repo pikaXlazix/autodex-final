@@ -56,3 +56,25 @@ IMPORTANT
 - La base PostgreSQL doit rester active et conserver ses données ; consulte les tarifs et règles de conservation de Render avant de choisir le plan.
 - Ce projet stocke les photos dans le JSON de la collection. La taille totale de la collection est limitée à 10 Mo et 500 voitures par compte pour éviter de surcharger la base. Réduis la taille des photos si nécessaire.
 - Les comptes de l'ancienne version locale ne sont pas importés automatiquement. Les anciennes voitures restées dans le localStorage d'un navigateur ne sont pas migrées dans un compte automatiquement.
+
+
+AMIS, PROFILS ET STATISTIQUES (NOUVEAU)
+======================================
+- Recherche d'utilisateurs par pseudo et envoi de demandes d'amis.
+- Demandes reçues : accepter ou refuser ; demandes envoyées : annuler.
+- Les profils et collections complètes (voitures, photos, prix, marques et valeur totale) sont visibles uniquement entre amis acceptés. Un utilisateur non ami ne peut pas consulter une collection.
+- La base PostgreSQL crée automatiquement la table des relations au redémarrage du serveur. Aucune variable Render supplémentaire n'est requise.
+
+ESTIMATIONS HYPERCARS (AMÉLIORATION)
+===================================
+- Ajout de références spécifiques pour de nombreuses versions rares : Bugatti Bolide/Centodieci/Chiron, Aston Martin Valkyrie/Vulcan/Victor, Ferrari F80/LaFerrari Aperta/Daytona SP3, Lamborghini Veneno/Sián, Koenigsegg Jesko, McLaren F1/P1/Senna, Pagani Zonda/Huayra/Utopia, ainsi que d'autres modèles.
+- Pour ces modèles précis, AutoDex utilise la référence dédiée plutôt qu'une moyenne trop générale des annonces. L'année ajuste ensuite l'estimation avec une décote plus prudente pour les voitures de collection.
+- Ces références sont des estimations manuelles indicatives, non des cotations certifiées. Les séries limitées, kilométrages, état, historique, spécification et ventes aux enchères peuvent modifier fortement la valeur réelle.
+
+MISE À JOUR DEPUIS TON PROJET EXISTANT
+=====================================
+1. Décompresse le ZIP et ouvre le dossier FINAL.
+2. Copie/remplace le contenu du dossier FINAL dans le dossier local de ton dépôt GitHub `autodex-ai` (garde le même dépôt, ne crée pas un nouveau projet).
+3. Dans GitHub Desktop, vérifie les fichiers modifiés, fais un commit avec le résumé `Ajout amis profils et estimations hypercars`, puis clique sur Push origin.
+4. Render redéploiera automatiquement si le déploiement automatique est activé. Attends le statut Live.
+5. Teste avec deux comptes distincts : envoie une demande depuis le premier, accepte-la depuis le second, puis ouvre le profil depuis la liste d'amis.
