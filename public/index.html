@@ -72,6 +72,18 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 .secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px;font-weight:700}
 .notice{display:none;background:#202c27;border:1px solid #315b47;color:#b4efcd;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:14px}
 
+
+/* Photo plein écran : collection personnelle et profils */
+.zoomable-photo{cursor:zoom-in}
+.zoomable-photo:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.photo-lightbox{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:clamp(12px,3vw,32px);background:rgba(4,6,10,.94);backdrop-filter:blur(7px)}
+.photo-lightbox.open{display:flex}
+.photo-lightbox-content{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;min-height:0}
+.photo-lightbox-image{display:block;max-width:96vw;max-height:calc(100vh - 100px);width:auto;height:auto;object-fit:contain;border-radius:10px;box-shadow:0 18px 70px #0009}
+.photo-lightbox-caption{color:#f5f6f8;text-align:center;font-size:14px;font-weight:700;max-width:90vw;overflow-wrap:anywhere}
+.photo-lightbox-close{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:46px;height:46px;border:1px solid #ffffff45;border-radius:50%;background:#20242c;color:white;font-size:30px;line-height:1;display:grid;place-items:center;z-index:1}
+.photo-lightbox-close:hover{background:var(--accent)}
+@media(max-width:600px){.photo-lightbox-image{max-width:96vw;max-height:calc(100dvh - 105px)}.photo-lightbox-close{width:42px;height:42px;font-size:27px}}
 .auth-screen{position:fixed;inset:0;z-index:1000;background:rgba(7,10,16,.96);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
 .auth-card{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 25px 80px #0008}
 .auth-card h2{font-size:26px;margin:0 0 8px}.auth-card p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}.auth-card .field{margin:13px 0}.auth-card input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:13px;border-radius:11px;outline:none}.auth-card .primary{width:100%;margin-top:10px}.auth-switch{display:flex;gap:8px;margin-bottom:20px}.auth-switch button{flex:1;padding:11px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;font-weight:700}.auth-switch button.active{background:var(--accent);color:#101010;border-color:transparent}.auth-error{display:none;background:#3a2023;border:1px solid #754047;color:#ffd7dc;border-radius:10px;padding:10px;font-size:13px;margin-bottom:12px}.account-pill{display:flex;align-items:center;gap:8px}.account-pill button{padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);cursor:pointer}
@@ -154,6 +166,13 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
       </div>
       <div class="form-actions"><button type="button" class="secondary" id="cancelModal">Annuler</button><button type="submit" class="primary" id="saveBtn">Enregistrer</button></div>
     </form>
+  </div>
+</div>
+<div class="photo-lightbox" id="photoLightbox" role="dialog" aria-modal="true" aria-label="Photo de voiture en plein écran" aria-hidden="true">
+  <button type="button" class="photo-lightbox-close" id="closePhotoLightbox" aria-label="Fermer la photo">×</button>
+  <div class="photo-lightbox-content" id="photoLightboxBackdrop">
+    <img class="photo-lightbox-image" id="photoLightboxImage" alt="Photo de voiture en plein écran">
+    <div class="photo-lightbox-caption" id="photoLightboxCaption"></div>
   </div>
 </div>
 <script>
@@ -248,7 +267,7 @@ function render() {
   }
   grid.innerHTML=shown.map(c=>`
     <article class="card">
-      <div class="photo">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
+      <div class="photo">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
       <div class="card-body"><div class="model">${escapeHtml(c.model)}</div><div class="meta">${c.year?escapeHtml(c.year)+" · ":""}${c.notes?escapeHtml(c.notes):"Fiche de ta collection"}</div><div class="price">${money(c.price)}</div>
       <div class="card-actions"><button class="small-btn" data-edit="${c.id}">✎ Modifier</button><button class="small-btn delete" data-delete="${c.id}">Supprimer</button></div></div>
     </article>`).join("");
@@ -305,6 +324,37 @@ $("search").addEventListener("input",render);
 $("brandFilter").addEventListener("change",render);
 $("sort").addEventListener("change",render);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+// Ouvre la photo en entier (sans le recadrage des vignettes) et ferme via croix, fond ou Échap.
+function openPhotoLightbox(img){
+  if(!img || !img.src) return;
+  const box=$("photoLightbox"), fullImage=$("photoLightboxImage");
+  fullImage.src=img.currentSrc||img.src;
+  fullImage.alt=img.alt||"Photo de voiture";
+  $("photoLightboxCaption").textContent=img.alt||"";
+  box.classList.add("open");
+  box.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+  $("closePhotoLightbox").focus();
+}
+function closePhotoLightbox(){
+  const box=$("photoLightbox");
+  if(!box.classList.contains("open")) return;
+  box.classList.remove("open");
+  box.setAttribute("aria-hidden","true");
+  $("photoLightboxImage").src="";
+  $("photoLightboxCaption").textContent="";
+  document.body.style.overflow="";
+}
+document.addEventListener("click",e=>{
+  const img=e.target.closest?.("img.zoomable-photo");
+  if(img){openPhotoLightbox(img);return;}
+  if(e.target===$("photoLightbox") || e.target===$("closePhotoLightbox")) closePhotoLightbox();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && $("photoLightbox").classList.contains("open")){e.stopPropagation();closePhotoLightbox();return;}
+  if((e.key==="Enter"||e.key===" ") && e.target.matches?.("img.zoomable-photo")){e.preventDefault();openPhotoLightbox(e.target);}
+});
+
 async function refreshSocial(){
   try{const data=await api("/api/friends");
     const list=(items,kind)=>items.length?items.map(x=>`<div class="social-item"><span><strong>${escapeHtml(x.username)}</strong></span><span>${kind==="incoming"?`<button data-accept="${x.id}">Accepter</button> <button data-remove="${x.id}">Refuser</button>`:kind==="outgoing"?`<button data-remove="${x.id}">Annuler</button>`:`<button data-profile="${escapeHtml(x.username)}">Voir le profil</button> <button data-remove="${x.friendship_id}">Retirer</button>`}</span></div>`).join(""):'<div class="social-muted">Rien pour le moment.</div>';
@@ -325,7 +375,7 @@ async function searchUsers(q){
 async function loadFriendProfile(username){
   const panel=$("friendProfile");panel.style.display="block";panel.innerHTML='<div class="social-muted">Chargement du profil…</div>';
   try{const p=await api(`/api/users/${encodeURIComponent(username)}/profile`);const st=p.stats;const priced=st.totalValue===null?"—":money(st.totalValue);const brands=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Aucune marque pour le moment.</span>';
-    const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${money(c.price)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
+    const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${money(c.price)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
     panel.innerHTML=`<div class="social-top"><h4 style="margin:0">🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
     $("closeFriendProfile").onclick=()=>{panel.style.display="none";};
   }catch(e){panel.innerHTML=`<div class="social-muted">${escapeHtml(e.message)}</div>`;}
