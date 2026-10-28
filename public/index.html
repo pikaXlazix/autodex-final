@@ -39,8 +39,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:17px;overflow:hidden;min-width:0;transition:transform .18s,border-color .18s}
 .card:hover{transform:translateY(-2px);border-color:#4b515e}
-.photo{height:180px;background:linear-gradient(135deg,#292e38,#171a20);display:grid;place-items:center;position:relative;overflow:hidden}
-.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo{height:210px;background:linear-gradient(135deg,#292e38,#171a20);display:grid;place-items:center;position:relative;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(var(--photo-zoom,1));transform-origin:center center}
 .photo .placeholder{font-size:54px;opacity:.7}
 .make-tag{position:absolute;top:10px;left:10px;background:#101216d9;border:1px solid #ffffff20;padding:5px 8px;border-radius:8px;font-size:11px;font-weight:750;backdrop-filter:blur(8px)}
 .card-body{padding:14px}
@@ -65,7 +65,7 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:12px;color:#c2c7d1;font-weight:700}
 .field.full{grid-column:1/-1}
-.preview{width:100%;height:160px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:none;margin-top:9px}
+.crop-frame{width:100%;aspect-ratio:4/3;max-height:280px;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:#101216;display:none;margin-top:9px;position:relative}.crop-frame img{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center center}.crop-frame:after{content:"APERÇU DU CADRE PROFIL";position:absolute;left:8px;bottom:8px;padding:4px 7px;border-radius:6px;background:#101216c9;color:#fff;font-size:10px;letter-spacing:.3px;pointer-events:none}.crop-controls{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.crop-control{background:#13161b;border:1px solid var(--line);border-radius:10px;padding:9px}.crop-control label{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:#c2c7d1;margin-bottom:5px}.crop-control input{padding:0;border:0;background:transparent;accent-color:var(--accent)}.crop-help{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.4}
 .hint{font-size:11px;color:var(--muted);line-height:1.5}
 .form-actions{display:flex;gap:9px;margin-top:19px}
 .form-actions button{flex:1}
@@ -75,8 +75,8 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 .auth-screen{position:fixed;inset:0;z-index:1000;background:rgba(7,10,16,.96);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
 .auth-card{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 25px 80px #0008}
 .auth-card h2{font-size:26px;margin:0 0 8px}.auth-card p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}.auth-card .field{margin:13px 0}.auth-card input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:13px;border-radius:11px;outline:none}.auth-card .primary{width:100%;margin-top:10px}.auth-switch{display:flex;gap:8px;margin-bottom:20px}.auth-switch button{flex:1;padding:11px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;font-weight:700}.auth-switch button.active{background:var(--accent);color:#101010;border-color:transparent}.auth-error{display:none;background:#3a2023;border:1px solid #754047;color:#ffd7dc;border-radius:10px;padding:10px;font-size:13px;margin-bottom:12px}.account-pill{display:flex;align-items:center;gap:8px}.account-pill button{padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);cursor:pointer}
-.social-panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 22px}.social-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.social-top h3{margin:0;font-size:19px}.social-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:15px;margin-top:15px}.social-box{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px;min-width:0}.social-box h4{margin:0 0 10px}.social-form{display:flex;gap:8px}.social-form input{min-width:0}.social-form button,.social-item button{border:1px solid var(--line);background:#292e38;color:var(--text);border-radius:9px;padding:8px 10px;font-weight:700}.social-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}.social-item:last-child{border-bottom:0}.social-item button{font-size:12px}.social-muted{color:var(--muted);font-size:12px}.social-results{margin-top:9px}.profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.profile-stat{padding:10px;background:#13161b;border:1px solid var(--line);border-radius:10px;min-width:0}.profile-stat strong{display:block;font-size:17px;overflow-wrap:anywhere}.profile-stat span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.brand-bars{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 13px}.brand-chip{border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:#d9dee7}.profile-cars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.profile-car{background:#13161b;border:1px solid var(--line);border-radius:11px;overflow:hidden;min-width:0}.profile-car img{width:100%;height:110px;object-fit:cover;display:block}.profile-car .pc-body{padding:9px}.profile-car strong{display:block;font-size:13px}.profile-car small{color:var(--muted);font-size:11px}.social-message{font-size:12px;color:var(--muted);margin-top:9px;min-height:16px}
-@media(max-width:650px){.social-grid{grid-template-columns:1fr}.profile-cars{grid-template-columns:repeat(2,minmax(0,1fr))}}.loading-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.social-panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 22px}.social-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.social-top h3{margin:0;font-size:19px}.social-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:15px;margin-top:15px}.social-box{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px;min-width:0}.social-box h4{margin:0 0 10px}.social-form{display:flex;gap:8px}.social-form input{min-width:0}.social-form button,.social-item button{border:1px solid var(--line);background:#292e38;color:var(--text);border-radius:9px;padding:8px 10px;font-weight:700}.social-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}.social-item:last-child{border-bottom:0}.social-item button{font-size:12px}.social-muted{color:var(--muted);font-size:12px}.social-results{margin-top:9px}.profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.profile-stat{padding:10px;background:#13161b;border:1px solid var(--line);border-radius:10px;min-width:0}.profile-stat strong{display:block;font-size:17px;overflow-wrap:anywhere}.profile-stat span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.brand-bars{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 13px}.brand-chip{border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:#d9dee7}.profile-cars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.profile-car{background:#13161b;border:1px solid var(--line);border-radius:11px;overflow:hidden;min-width:0}.profile-car img{width:100%;height:190px;object-fit:cover;display:block;transform:scale(var(--photo-zoom,1));transform-origin:center center}.profile-car .pc-body{padding:9px}.profile-car strong{display:block;font-size:13px}.profile-car small{color:var(--muted);font-size:11px}.social-message{font-size:12px;color:var(--muted);margin-top:9px;min-height:16px}
+@media(max-width:650px){.social-grid{grid-template-columns:1fr}.profile-cars{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-car img{height:160px}}.loading-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
 @media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:21px}.hero:after{right:8px;font-size:75px}.hero .primary{align-self:flex-end}.photo{height:150px}}
 @media(max-width:520px){.wrap{padding:17px 12px 35px}header{margin-bottom:18px}.header-pill{display:none}.hero{display:block}.hero h2{font-size:28px}.hero p{max-width:95%;margin-bottom:17px}.hero:after{right:5px;bottom:-15px;font-size:65px}.stats{gap:8px}.stat{padding:12px 10px}.stat .num{font-size:21px}.stat .label{font-size:10px}.grid{gap:10px}.photo{height:125px}.card-body{padding:11px}.model{font-size:15px}.price{font-size:17px}.toolbar select{flex:1;min-width:0}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
 </style>
@@ -143,7 +143,7 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
     <div class="notice" id="notice"></div>
     <form id="carForm">
       <div class="form-grid">
-        <div class="field full"><label for="photo">Photo de la voiture</label><input id="photo" type="file" accept="image/*"><div class="hint">Choisis une photo de ta galerie. Les hypercars, supercars et de nombreux modèles sportifs sont inclus. Si tu ne trouves pas un nom, utilise les champs « non listé ».</div><img id="preview" class="preview" alt="Aperçu de la voiture"></div>
+        <div class="field full"><label for="photo">Photo de la voiture</label><input id="photo" type="file" accept="image/*"><div class="hint">Choisis une photo, puis ajuste le cadrage pour qu'elle s'affiche exactement comme tu le souhaites dans la collection et sur les profils.</div><div class="crop-frame" id="cropFrame"><img id="preview" alt="Aperçu du cadrage de la photo"></div><div class="crop-controls" id="cropControls"><div class="crop-control"><label for="cropZoom">Zoom <span id="cropZoomValue">1,0×</span></label><input id="cropZoom" type="range" min="1" max="2.5" step="0.05" value="1"></div><div class="crop-control"><label for="cropX">Horizontal <span id="cropXValue">50%</span></label><input id="cropX" type="range" min="0" max="100" step="1" value="50"></div><div class="crop-control"><label for="cropY">Vertical <span id="cropYValue">50%</span></label><input id="cropY" type="range" min="0" max="100" step="1" value="50"></div><button type="button" class="secondary" id="resetCrop">Réinitialiser le cadrage</button></div><div class="crop-help" id="cropHelp" style="display:none">Le cadre correspond à l'aperçu des photos sur les profils. Le cadrage sera conservé lors de l'enregistrement.</div></div>
         <div class="field"><label for="make">Marque *</label><select id="make" required></select></div>
         <div class="field"><label for="model">Modèle *</label><select id="model" required disabled></select></div>
         <div class="field full" id="otherMakeWrap" style="display:none"><label for="otherMake">Marque non listée</label><input id="otherMake" maxlength="50" placeholder="Saisis la marque"></div>
@@ -160,6 +160,7 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 let cars = [];
 let editingId = null;
 let selectedPhoto = "";
+let cropX = 50, cropY = 50, cropZoom = 1;
 let authMode = "login";
 const $ = id => document.getElementById(id);
 async function api(path, options={}) {
@@ -216,7 +217,7 @@ function render() {
   }
   grid.innerHTML=shown.map(c=>`
     <article class="card">
-      <div class="photo">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
+      <div class="photo">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="object-position:${Number(c.cropX??50)}% ${Number(c.cropY??50)}%;--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))}">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
       <div class="card-body"><div class="model">${escapeHtml(c.model)}</div><div class="meta">${c.year?escapeHtml(c.year)+" · ":""}${c.notes?escapeHtml(c.notes):"Fiche de ta collection"}</div><div class="price">${money(c.price)}</div>
       <div class="card-actions"><button class="small-btn" data-edit="${c.id}">✎ Modifier</button><button class="small-btn delete" data-delete="${c.id}">Supprimer</button></div></div>
     </article>`).join("");
@@ -224,7 +225,7 @@ function render() {
   grid.querySelectorAll("[data-delete]").forEach(btn=>btn.addEventListener("click",()=>deleteCar(btn.dataset.delete)));
 }
 function openModal(car=null) {
-  editingId=car?car.id:null; selectedPhoto=car?.photo||"";
+  editingId=car?car.id:null; selectedPhoto=car?.photo||""; cropX=Number(car?.cropX??50); cropY=Number(car?.cropY??50); cropZoom=Number(car?.cropZoom??1);
   $("modalTitle").textContent=car?"Modifier la voiture":"Ajouter une voiture";
   const savedMake=car?.make||""; const catalogMake=CATALOG[savedMake]?savedMake:"Autre / non listée";
   $("make").value=catalogMake; $("otherMake").value=catalogMake==="Autre / non listée"?savedMake:"";
@@ -233,22 +234,27 @@ function openModal(car=null) {
   toggleCustomFields();
   $("year").value=car?.year||""; $("price").value=car?.price??"";
   $("notes").value=car?.notes||""; $("photo").value="";
-  $("preview").src=selectedPhoto; $("preview").style.display=selectedPhoto?"block":"none";
+  $("preview").src=selectedPhoto; $("cropFrame").style.display=selectedPhoto?"block":"none"; $("cropControls").style.display=selectedPhoto?"grid":"none"; $("cropHelp").style.display=selectedPhoto?"block":"none"; $("cropZoom").value=cropZoom; $("cropX").value=cropX; $("cropY").value=cropY; updateCropPreview();
   $("notice").style.display="none"; $("saveBtn").textContent=car?"Enregistrer les modifications":"Enregistrer";
   $("modalBackdrop").classList.add("open");
 }
-function closeModal(){ $("modalBackdrop").classList.remove("open"); $("carForm").reset(); selectedPhoto=""; }
+function closeModal(){ $("modalBackdrop").classList.remove("open"); $("carForm").reset(); selectedPhoto=""; $("cropFrame").style.display="none"; $("cropControls").style.display="none"; $("cropHelp").style.display="none"; }
 function editCar(id){ const car=cars.find(c=>c.id===id); if(car)openModal(car); }
 async function deleteCar(id){
   const car=cars.find(c=>c.id===id); if(!car)return;
   if(confirm(`Supprimer ${car.make} ${car.model} de ta collection ?`)){const previous=cars; cars=cars.filter(c=>c.id!==id); if(await saveCars())render(); else cars=previous;}
 }
+function updateCropPreview(){const img=$("preview");if(!img)return;img.style.objectPosition=`${cropX}% ${cropY}%`;img.style.transform=`scale(${cropZoom})`;$("cropZoomValue").textContent=`${Number(cropZoom).toFixed(2).replace(".",",")}×`;$("cropXValue").textContent=`${cropX}%`;$("cropYValue").textContent=`${cropY}%`;}
+$("cropZoom").addEventListener("input",e=>{cropZoom=Number(e.target.value);updateCropPreview();});
+$("cropX").addEventListener("input",e=>{cropX=Number(e.target.value);updateCropPreview();});
+$("cropY").addEventListener("input",e=>{cropY=Number(e.target.value);updateCropPreview();});
+$("resetCrop").addEventListener("click",()=>{cropX=50;cropY=50;cropZoom=1;$("cropZoom").value=1;$("cropX").value=50;$("cropY").value=50;updateCropPreview();});
 $("photo").addEventListener("change",e=>{
   const file=e.target.files?.[0]; if(!file)return;
   if(!file.type.startsWith("image/")){alert("Choisis un fichier image.");return;}
   if(file.size>5*1024*1024){alert("Cette photo dépasse 5 Mo. Choisis une image plus légère pour éviter de remplir le stockage.");e.target.value="";return;}
   const reader=new FileReader();
-  reader.onload=()=>{selectedPhoto=reader.result;$("preview").src=selectedPhoto;$("preview").style.display="block";};
+  reader.onload=()=>{selectedPhoto=reader.result;cropX=50;cropY=50;cropZoom=1;$("cropFrame").style.display="block";$("cropControls").style.display="grid";$("cropHelp").style.display="block";$("cropZoom").value=1;$("cropX").value=50;$("cropY").value=50;$("preview").src=selectedPhoto;updateCropPreview();};
   reader.readAsDataURL(file);
 });
 $("carForm").addEventListener("submit",async e=>{
@@ -257,7 +263,7 @@ $("carForm").addEventListener("submit",async e=>{
   const model=($("model").value==="Autre modèle"?$("otherModel").value:$("model").value).trim();
   if(!make||!model){alert("Choisis une marque et un modèle, ou saisis-les dans les champs non listés.");return;}
   const old=editingId?cars.find(c=>c.id===editingId):null;
-  const car={id:editingId||`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,make,model,year:$("year").value?Number($("year").value):"",price:$("price").value===""?"":Number($("price").value),notes:$("notes").value.trim(),photo:selectedPhoto||old?.photo||"",createdAt:old?.createdAt||Date.now()};
+  const car={id:editingId||`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,make,model,year:$("year").value?Number($("year").value):"",price:$("price").value===""?"":Number($("price").value),notes:$("notes").value.trim(),photo:selectedPhoto||old?.photo||"",cropX,cropY,cropZoom,createdAt:old?.createdAt||Date.now()};
   const previous=cars.slice();
   if(editingId)cars=cars.map(c=>c.id===editingId?car:c);else cars.push(car);
   if(await saveCars()){closeModal();render();} else cars=previous;
@@ -290,7 +296,7 @@ async function searchUsers(q){
 async function loadFriendProfile(username){
   const panel=$("friendProfile");panel.style.display="block";panel.innerHTML='<div class="social-muted">Chargement du profil…</div>';
   try{const p=await api(`/api/users/${encodeURIComponent(username)}/profile`);const st=p.stats;const priced=st.totalValue===null?"—":money(st.totalValue);const brands=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Aucune marque pour le moment.</span>';
-    const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${money(c.price)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
+    const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car">${c.photo?`<img src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="object-position:${Number(c.cropX??50)}% ${Number(c.cropY??50)}%;--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))}">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${money(c.price)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
     panel.innerHTML=`<div class="social-top"><h4 style="margin:0">🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
     $("closeFriendProfile").onclick=()=>{panel.style.display="none";};
   }catch(e){panel.innerHTML=`<div class="social-muted">${escapeHtml(e.message)}</div>`;}

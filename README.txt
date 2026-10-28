@@ -78,3 +78,11 @@ MISE À JOUR DEPUIS TON PROJET EXISTANT
 3. Dans GitHub Desktop, vérifie les fichiers modifiés, fais un commit avec le résumé `Ajout amis profils et estimations hypercars`, puis clique sur Push origin.
 4. Render redéploiera automatiquement si le déploiement automatique est activé. Attends le statut Live.
 5. Teste avec deux comptes distincts : envoie une demande depuis le premier, accepte-la depuis le second, puis ouvre le profil depuis la liste d'amis.
+
+MISE A JOUR PHOTOS ET ESTIMATIONS LUXE
+=====================================
+- Le formulaire photo propose maintenant un aperçu au format 4:3, avec réglages de zoom et de position horizontale/verticale. Le cadrage est enregistré dans la fiche et réutilisé sur les cartes de collection et les profils d'amis.
+- Les photos de la collection sont plus hautes ; la galerie des profils affiche les photos sur une hauteur plus importante, avec une adaptation mobile.
+- Les estimations spécifiques couvrent désormais plusieurs Ferrari (F8 Tributo/F8 Spider, Roma, 296 GTB/GTS, 812 Superfast/GTS, 599 GTO, 430 Scuderia, etc.), Lamborghini (Huracán Performante/Tecnica/EVO, Aventador SV/S, Urus Performante, etc.), Aston Martin (DBS Superleggera, DBX707, DB12, DB11 AMR) et McLaren (Artura, 675LT, 620R, 600LT, 650S, 570S).
+- Exemple : une Ferrari F8 Tributo utilise une référence de base indicative de 430 000 €, ajustée selon l'année. Une F8 Tributo de 2020 ressort donc autour de 340 000 €, plutôt qu'une estimation générique trop basse. Le résultat réel varie selon kilométrage, état, historique, options et marché.
+- Ces références sont intégrées au serveur et sont prioritaires sur les médianes génériques de la source publique pour les modèles listés. Elles ne sont pas des prix de vente garantis ni une cotation en direct.
