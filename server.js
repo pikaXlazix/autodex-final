@@ -52,6 +52,7 @@ async function initDatabase() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id,friend_id), CHECK(user_id<>friend_id)
   )`);
   await pool.query("ALTER TABLE autodex_users ADD COLUMN IF NOT EXISTS profile_photo TEXT");
+  await pool.query("ALTER TABLE autodex_users ADD COLUMN IF NOT EXISTS display_skin TEXT NOT NULL DEFAULT 'bronze'");
   await pool.query("DELETE FROM autodex_sessions WHERE expires_at < NOW()");
 }
 function dbRequired(res) { if (pool) return false; res.status(503).json({error:"La base de données n'est pas configurée. Ajoute DATABASE_URL dans Render."}); return true; }
@@ -157,12 +158,25 @@ app.delete("/api/friends/:id", requireUser, async (req,res) => {
   try{const r=await pool.query("DELETE FROM autodex_friendships WHERE id=$1 AND (user_id=$2 OR friend_id=$2) RETURNING id",[req.params.id,req.autodexUser.id]);if(!r.rowCount)return res.status(404).json({error:"Relation introuvable."});res.json({ok:true});}
   catch(e){console.error(e);res.status(500).json({error:"Impossible de supprimer cette relation."});}
 });
+app.put("/api/profile/skin", requireUser, async (req,res) => {
+  try {
+    const skin=String(req.body?.displaySkin||"");
+    const thresholds={bronze:100000,silver:500000,gold:1000000,platinum:2500000,diamond:5000000,rainbow:10000000,galaxy:20000000,godly:50000000};
+    if(!Object.prototype.hasOwnProperty.call(thresholds,skin)) return res.status(400).json({error:"Skin inconnu."});
+    const result=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[req.autodexUser.id]);
+    const cars=result.rows[0]?.cars_json||[];
+    const total=cars.reduce((sum,c)=>{const n=Number(c.price);return c.price!==""&&c.price!==null&&Number.isFinite(n)&&n>0?sum+n:sum;},0);
+    if(total<thresholds[skin]) return res.status(403).json({error:"Ce skin est encore verrouillé : la valeur estimée de ta collection est insuffisante."});
+    await pool.query("UPDATE autodex_users SET display_skin=$1 WHERE id=$2",[skin,req.autodexUser.id]);
+    res.json({ok:true,displaySkin:skin});
+  } catch(e) { console.error(e); res.status(500).json({error:"Impossible d'enregistrer le skin équipé."}); }
+});
 app.get("/api/users/:username/profile", requireUser, async (req,res) => {
-  try{const target=await pool.query("SELECT id,username,profile_photo FROM autodex_users WHERE username_key=$1",[String(req.params.username).toLocaleLowerCase("fr-FR")]);if(!target.rowCount)return res.status(404).json({error:"Profil introuvable."});const user=target.rows[0],own=String(user.id)===String(req.autodexUser.id);
+  try{const target=await pool.query("SELECT id,username,profile_photo,display_skin FROM autodex_users WHERE username_key=$1",[String(req.params.username).toLocaleLowerCase("fr-FR")]);if(!target.rowCount)return res.status(404).json({error:"Profil introuvable."});const user=target.rows[0],own=String(user.id)===String(req.autodexUser.id);
     if(!own){const rel=await pool.query("SELECT 1 FROM autodex_friendships WHERE status='accepted' AND ((user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1))",[req.autodexUser.id,user.id]);if(!rel.rowCount)return res.status(403).json({error:"Tu dois être ami avec ce compte pour voir sa collection."});}
     const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[user.id]);const cars=r.rows[0]?.cars_json||[];const brands={};let total=0,priced=0;
     for(const c of cars){const b=String(c.make||"Autre");brands[b]=(brands[b]||0)+1;if(c.price!==""&&c.price!==null&&Number.isFinite(Number(c.price))){total+=Number(c.price);priced++;}}
-    res.json({username:user.username,profilePhoto:user.profile_photo||null,own,cars,stats:{carCount:cars.length,brandCount:Object.keys(brands).length,totalValue:priced?total:null,pricedCount:priced,brands:Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}))}});
+    res.json({username:user.username,profilePhoto:user.profile_photo||null,displaySkin:user.display_skin||"bronze",own,cars,stats:{carCount:cars.length,brandCount:Object.keys(brands).length,totalValue:priced?total:null,pricedCount:priced,brands:Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}))}});
   }catch(e){console.error(e);res.status(500).json({error:"Impossible de charger ce profil."});}
 });
 

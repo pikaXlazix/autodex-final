@@ -28,3 +28,10 @@ NOUVEAUTÉS — MENU ET PROFIL
 - La photo est redimensionnée dans le navigateur avant envoi et enregistrée sur le compte ; elle apparaît dans la liste d'amis et les profils d'amis.
 - La base existante est migrée automatiquement avec la colonne profile_photo au démarrage du serveur.
 - Le pseudo doit rester unique et respecter les règles habituelles (3 à 24 caractères, lettres/chiffres/_/-).
+
+V12 — Récompenses et skins d'exposition
+- Menu : nouvel onglet Récompenses.
+- Paliers calculés à partir de la somme des valeurs (champ prix) de la collection : Bronze 100 000 €, Argent 500 000 €, Or 1 000 000 €, Platine 2 500 000 €, Diamant 5 000 000 €, Arc-en-ciel 10 000 000 €, Galaxy 20 000 000 €, Godly 50 000 000 €.
+- Les skins débloqués peuvent être équipés ; le choix est enregistré sur le compte dans display_skin.
+- Le cadre, l'emblème sous la photo et le fond coloré décorent les fiches de voiture dans la collection et le profil public.
+- Migration automatique de la colonne display_skin au démarrage. Les comptes et collections existants sont conservés.
