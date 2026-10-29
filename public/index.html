@@ -148,12 +148,6 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 .profile-car .skin-divider:before{content:"";position:absolute;left:calc(50% - 34px);top:-8px;width:68px;height:18px;background:var(--skin);opacity:.75;clip-path:polygon(0 20%,35% 40%,50% 0,65% 40%,100% 20%,75% 85%,50% 60%,25% 85%)}
 @media(max-width:700px){.card .photo:after{inset:4px}.card .skin-divider:before{width:70px;left:calc(50% - 35px)}}
 
-
-/* Décoration discrète de marque : filigrane typographique dans le fond, jamais sur la photo ni sur les contours. */
-.card .card-body,.profile-car .pc-body{position:relative;isolation:isolate;overflow:hidden;}
-.brand-watermark{position:absolute;right:12px;bottom:25px;z-index:-1;max-width:55%;font-weight:950;font-size:clamp(20px,3vw,34px);line-height:1;letter-spacing:.06em;white-space:nowrap;color:var(--skin);opacity:.10;pointer-events:none;user-select:none;transform:skewX(-8deg);}
-.card .card-body .model,.card .card-body .meta,.card .card-body .price,.card .card-body .card-actions,.profile-car .pc-body strong,.profile-car .pc-body small{position:relative;z-index:1;}
-@media(max-width:650px){.brand-watermark{font-size:22px;right:8px;bottom:23px;opacity:.08;}}
 </style>
 </head>
 <body>
@@ -324,13 +318,6 @@ function carPriceLabel(car) {
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
-function brandWatermark(make) {
-  const key = String(make ?? "").trim().toLowerCase();
-  const marks = {"alfa romeo":"ALFA","aston martin":"AM","bmw":"BMW","bugatti":"EB","ferrari":"F","ford":"FORD","honda":"H","koenigsegg":"K","lamborghini":"L","land rover":"LR","lexus":"L","maserati":"三叉","mclaren":"MCL","mercedes-amg":"AMG","mercedes-benz":"MB","mercedes":"MB","nissan":"N","pagani":"P","peugeot":"PEU","porsche":"P","renault":"R","rolls-royce":"RR","subaru":"星","tesla":"T","toyota":"T","venturi":"V","volkswagen":"VW","volvo":"VOLVO"};
-  if (marks[key]) return marks[key];
-  const words = String(make ?? "").trim().split(/\s+/).filter(Boolean);
-  return words.length > 1 ? words.map(w => w[0]).join("").slice(0,3).toUpperCase() : (words[0] || "AUTO").slice(0,4).toUpperCase();
-}
 async function saveCars() {
   try { await api("/api/cars", {method:"PUT",body:JSON.stringify({cars})}); return true; }
   catch(e) { alert((e.message || "Impossible d'enregistrer la collection.") + "\n\nTes données locales n'ont pas été supprimées. Si l'erreur continue, copie le message et les logs Render pour diagnostiquer la base de données."); return false; }
@@ -380,7 +367,7 @@ function render() {
   grid.innerHTML=shown.map(c=>`
     <article class="card" data-skin="${equippedSkin}">
       <div class="photo">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
-      <div class="skin-divider" data-emblem="${(REWARD_SKINS.find(s=>s.id===equippedSkin)||REWARD_SKINS[0]).emblem}"></div><div class="card-body"><span class="brand-watermark" aria-hidden="true">${escapeHtml(brandWatermark(c.make))}</span><div class="model">${escapeHtml(c.model)}</div><div class="meta">${c.year?escapeHtml(c.year)+" · ":""}${c.notes?escapeHtml(c.notes):"Fiche de ta collection"}</div><div class="price">${carPriceLabel(c)}</div>
+      <div class="skin-divider" data-emblem="${(REWARD_SKINS.find(s=>s.id===equippedSkin)||REWARD_SKINS[0]).emblem}"></div><div class="card-body"><div class="model">${escapeHtml(c.model)}</div><div class="meta">${c.year?escapeHtml(c.year)+" · ":""}${c.notes?escapeHtml(c.notes):"Fiche de ta collection"}</div><div class="price">${carPriceLabel(c)}</div>
       <div class="card-actions"><button class="small-btn" data-edit="${c.id}">✎ Modifier</button><button class="small-btn delete" data-delete="${c.id}">Supprimer</button></div></div>
     </article>`).join("");
   grid.querySelectorAll("[data-edit]").forEach(btn=>btn.addEventListener("click",()=>editCar(btn.dataset.edit)));
@@ -488,7 +475,7 @@ async function searchUsers(q){
 async function loadFriendProfile(username){
   const panel=$("friendProfile");panel.style.display="block";panel.innerHTML='<div class="social-muted">Chargement du profil…</div>';
   try{const p=await api(`/api/users/${encodeURIComponent(username)}/profile`);const st=p.stats;const priced=st.totalValue===null?"—":money(st.totalValue);const brands=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Aucune marque pour le moment.</span>';
-    const publicSkin=REWARD_SKINS.some(s=>s.id===p.displaySkin)?p.displaySkin:"bronze";const emblem=(REWARD_SKINS.find(s=>s.id===publicSkin)||REWARD_SKINS[0]).emblem;const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car" data-skin="${publicSkin}">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="skin-divider" data-emblem="${emblem}"></div><div class="pc-body"><span class="brand-watermark" aria-hidden="true">${escapeHtml(brandWatermark(c.make))}</span><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${carPriceLabel(c)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
+    const publicSkin=REWARD_SKINS.some(s=>s.id===p.displaySkin)?p.displaySkin:"bronze";const emblem=(REWARD_SKINS.find(s=>s.id===publicSkin)||REWARD_SKINS[0]).emblem;const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car" data-skin="${publicSkin}">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="skin-divider" data-emblem="${emblem}"></div><div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${carPriceLabel(c)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
     panel.innerHTML=`<div class="social-top"><h4 style="margin:0;display:flex;align-items:center;gap:8px">${p.profilePhoto?`<span class="mini-avatar"><img src="${p.profilePhoto}" alt=""></span>`:`<span class="mini-avatar">👤</span>`} 🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
     $("closeFriendProfile").onclick=()=>{panel.style.display="none";};
   }catch(e){panel.innerHTML=`<div class="social-muted">${escapeHtml(e.message)}</div>`;}
