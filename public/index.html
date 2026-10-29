@@ -580,3 +580,11 @@ $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logou
 .profile-car[data-skin="rainbow"] small{color:#ffe7ff!important;text-shadow:0 0 8px #ff54d8aa;}
 .card[data-skin="galaxy"] .card-body{background:radial-gradient(ellipse at 80% 80%,#43106d 0%,#211343 54%,#0d102b 100%)!important;}
 </style>
+
+<style id="autodex-divider-clean">
+/* Séparateur photo / infos : plus de bande ni de gros trait plein, juste un filet lumineux fin qui s'estompe sur les côtés, avec l'emblème au centre. */
+.card .skin-divider,.profile-car .skin-divider{height:2px!important;margin-top:0!important;border-top:0!important;background:linear-gradient(90deg,transparent 0%,var(--skin) 22%,var(--skin) 78%,transparent 100%)!important;box-shadow:0 0 8px var(--skin-glow)!important;opacity:.9}
+.card .skin-divider:before,.profile-car .skin-divider:before{opacity:.55!important;filter:none!important}
+.card .card-body{padding-top:22px}
+.profile-car .skin-divider{margin-bottom:12px!important}
+</style>
