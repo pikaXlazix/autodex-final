@@ -539,3 +539,15 @@ $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logou
 .card[data-skin="galaxy"]::before,.profile-car[data-skin="galaxy"]::before{background-image:url('/skins/galaxy.png')}
 .card[data-skin="godly"]::before,.profile-car[data-skin="godly"]::before{background-image:url('/skins/godly.png')}
 </style>
+
+<style id="autodex-reference-skin-final">
+/* Transparent overlays extracted from the exact eight approved reference cards. */
+.card,.profile-car{position:relative;isolation:isolate;overflow:hidden;}
+.card::before,.profile-car::before{content:"";position:absolute;inset:0;z-index:20;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;opacity:1;}
+.card .photo:after{content:none!important;}
+.card .skin-divider{height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
+.card .skin-divider:before,.card .skin-divider:after{display:none!important;content:none!important;}
+.card .card-body{background:linear-gradient(135deg,transparent,var(--skin-glow)),var(--skin-bg);}
+.profile-car .skin-divider{height:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;}
+.profile-car .skin-divider:before,.profile-car .skin-divider:after{display:none!important;content:none!important;}
+</style>
