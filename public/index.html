@@ -550,3 +550,26 @@ $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logou
 .profile-car .pc-body{background-image:radial-gradient(ellipse at 100% 0%,var(--skin-glow),transparent 70%);}
 @media(prefers-reduced-motion:reduce){.card,.profile-car{transition:none;}}
 </style>
+
+<style id="autodex-fill-polish-v2">
+/* V2: remove the diagonal light/dark split from the information panel. */
+.card .card-body{background:var(--skin-bg)!important;background-image:none!important;}
+.profile-car .pc-body{background:var(--skin-bg)!important;background-image:none!important;}
+/* Smooth, cohesive fills for public profile cards, matching each equipped skin. */
+.profile-car[data-skin="bronze"]{--skin-bg:linear-gradient(145deg,#4b2b1d 0%,#382116 100%)}
+.profile-car[data-skin="silver"]{--skin-bg:linear-gradient(145deg,#344a5b 0%,#202e3b 100%)}
+.profile-car[data-skin="gold"]{--skin-bg:linear-gradient(145deg,#57400e 0%,#352707 100%)}
+.profile-car[data-skin="platinum"]{--skin-bg:linear-gradient(145deg,#07515b 0%,#07353e 100%)}
+.profile-car[data-skin="diamond"]{--skin-bg:linear-gradient(145deg,#075b91 0%,#07365f 100%)}
+.profile-car[data-skin="rainbow"]{--skin-bg:linear-gradient(110deg,#5a173b 0%,#71311e 18%,#655014 34%,#15543b 50%,#123f6b 67%,#3e246e 83%,#651c59 100%)}
+.profile-car[data-skin="galaxy"]{--skin-bg:radial-gradient(ellipse at 80% 80%,#43106d 0%,#211343 54%,#0d102b 100%)}
+.profile-car[data-skin="godly"]{--skin-bg:linear-gradient(145deg,#6b4b0b 0%,#3c2a0b 58%,#241907 100%)}
+/* Rainbow skin gets a real multicolour fill and matching dynamic price text. */
+.card[data-skin="rainbow"] .card-body,
+.profile-car[data-skin="rainbow"] .pc-body{background:linear-gradient(110deg,#5a173b 0%,#71311e 18%,#655014 34%,#15543b 50%,#123f6b 67%,#3e246e 83%,#651c59 100%)!important;}
+.card[data-skin="rainbow"] .price,
+.card[data-skin="rainbow"] .car-price,
+.card[data-skin="rainbow"] .price-value,
+.profile-car[data-skin="rainbow"] small{color:#ffe7ff!important;text-shadow:0 0 8px #ff54d8aa;}
+.card[data-skin="galaxy"] .card-body{background:radial-gradient(ellipse at 80% 80%,#43106d 0%,#211343 54%,#0d102b 100%)!important;}
+</style>
