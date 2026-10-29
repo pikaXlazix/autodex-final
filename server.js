@@ -96,7 +96,13 @@ app.post("/api/auth/login", async (req,res) => {
 app.post("/api/auth/logout", async (req,res) => { try { const token=cookieValue(req,SESSION_COOKIE); if(pool&&token) await pool.query("DELETE FROM autodex_sessions WHERE token_hash=$1",[hashToken(token)]); clearSessionCookie(res); res.json({ok:true}); } catch(e) { clearSessionCookie(res); res.json({ok:true}); } });
 app.get("/api/auth/me", async (req,res) => { if(dbRequired(res)) return; try { const user=await currentUser(req); res.json({user:user?{username:user.username}:null}); } catch(e) { console.error(e); res.status(500).json({error:"Erreur de vérification du compte."}); } });
 app.get("/api/cars", requireUser, async (req,res) => { try { const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[req.autodexUser.id]); res.json({cars:r.rows[0]?.cars_json||[]}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible de charger la collection."}); } });
-app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>180*1024*1024) return res.status(413).json({error:"Collection trop volumineuse (limite de 180 Mo). Compresse les photos ou réduis leur nombre."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible d'enregistrer la collection."}); } });
+app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>180*1024*1024) return res.status(413).json({error:"Collection trop volumineuse (limite de 180 Mo). Compresse les photos ou réduis leur nombre."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) {
+  console.error("Save collection failed:", { code: e?.code, message: e?.message, detail: e?.detail });
+  if (e?.code === "23503") return res.status(409).json({error:"Erreur de compte : la session ou le compte n'est plus valide. Déconnecte-toi puis reconnecte-toi."});
+  if (e?.code === "54000" || e?.code === "54001" || e?.code === "22001" || e?.code === "22P05") return res.status(413).json({error:"La collection ou les photos sont trop volumineuses pour être enregistrées. Les photos ont été compressées ; essaie de retirer ou remplacer une photo très lourde."});
+  if (e?.code === "23505") return res.status(409).json({error:"Conflit pendant l'enregistrement. Recharge la page et réessaie."});
+  res.status(500).json({error:"Impossible d'enregistrer la collection. Le serveur ou la base de données a refusé la sauvegarde. Consulte les logs Render pour le code d'erreur."});
+} });
 
 
 // Social : recherche par pseudo, demandes d'amis et profils accessibles entre amis acceptés.
@@ -220,10 +226,18 @@ function fallbackEstimate(make, model, year) {
   let price=base;if(Number.isInteger(y)&&y>=1886&&y<=2026){const age=Math.max(0,2026-y);const factor=base>=1000000?Math.max(0.68,1-age*0.006):base>=250000?Math.max(0.42,1-age*0.035):base>=80000?Math.max(0.2,1-age*0.055):Math.max(0.08,1-age*0.07);price*=factor;}
   return Math.max(500,Math.round(price/500)*500);
 }
+function estimatePriceRange(price) {
+  // Fourchette indicative autour du prix de référence : plus large pour les modèles rares/luxueux.
+  const p = Number(price) || 0;
+  const lowFactor = p >= 1000000 ? 0.65 : p >= 250000 ? 0.72 : p >= 80000 ? 0.78 : 0.82;
+  const highFactor = p >= 1000000 ? 1.65 : p >= 250000 ? 1.45 : p >= 80000 ? 1.35 : 1.28;
+  const round = n => Math.max(500, Math.round(n / 500) * 500);
+  return { priceMin: round(p * lowFactor), priceMax: round(p * highFactor) };
+}
 function sendFallback(res, make, model, year, reason = "") {
   const price = fallbackEstimate(make, model, year);
   return res.json({
-    price, make, model, year: Number(year) || null, basis: "fallback",
+    price, ...estimatePriceRange(price), make, model, year: Number(year) || null, basis: "fallback",
     source: reason.includes("hypercar") ? "Référence indicative dédiée à cette hypercar/version rare ; le marché réel peut varier fortement" : "Estimation automatique approximative basée sur la marque, le modèle et l'année" + (reason ? ` (${reason})` : ""),
     sourceUrl: reason.includes("hypercar") ? null : "https://karoto.fr/donnees", license: "Estimation indicative"
   });
@@ -247,7 +261,7 @@ app.get("/api/price-estimate", async (req, res) => {
     const exactYear = Number.isInteger(year) && year >= 1886 && year <= 2100
       ? matchesYear.find(row => Number(row.annee) === year && validPrice(row.prix_median_france_eur)) : null;
     if (exactYear) return res.json({
-      price: validPrice(exactYear.prix_median_france_eur), make: exactYear.marque, model: exactYear.modele,
+      price: validPrice(exactYear.prix_median_france_eur), ...estimatePriceRange(validPrice(exactYear.prix_median_france_eur)), make: exactYear.marque, model: exactYear.modele,
       year: Number(exactYear.annee), mileageMedian: Number(exactYear.km_median_france) || null,
       listings: Number(exactYear.annonces_france) || null, basis: "year", date: exactYear.date_extraction || "",
       source: "Karoto — médiane des annonces françaises pour ce modèle et cette année",
@@ -255,7 +269,7 @@ app.get("/api/price-estimate", async (req, res) => {
     });
     const modelRow = modelRows.find(row => normalizeCarName(row.marque) === wantedMake && normalizeCarName(row.modele) === wantedModel && validPrice(row.prix_median_france_eur));
     if (modelRow) return res.json({
-      price: validPrice(modelRow.prix_median_france_eur), make: modelRow.marque, model: modelRow.modele,
+      price: validPrice(modelRow.prix_median_france_eur), ...estimatePriceRange(validPrice(modelRow.prix_median_france_eur)), make: modelRow.marque, model: modelRow.modele,
       year: Number(modelRow.reference_annee) || null, mileageMedian: Number(modelRow.reference_km) || null,
       listings: Number(modelRow.annonces_france) || null, basis: "model", date: modelRow.date_calcul || "",
       requestedYear: Number.isInteger(year) && year >= 1886 && year <= 2100 ? year : null,
