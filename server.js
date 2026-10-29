@@ -35,7 +35,7 @@ async function initDatabase() {
   if (!pool) return;
   await pool.query(`CREATE TABLE IF NOT EXISTS autodex_users (
     id BIGSERIAL PRIMARY KEY, username TEXT NOT NULL, username_key TEXT NOT NULL UNIQUE,
-    password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, profile_photo TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS autodex_sessions (
     token_hash TEXT PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES autodex_users(id) ON DELETE CASCADE,
@@ -51,13 +51,14 @@ async function initDatabase() {
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id,friend_id), CHECK(user_id<>friend_id)
   )`);
+  await pool.query("ALTER TABLE autodex_users ADD COLUMN IF NOT EXISTS profile_photo TEXT");
   await pool.query("DELETE FROM autodex_sessions WHERE expires_at < NOW()");
 }
 function dbRequired(res) { if (pool) return false; res.status(503).json({error:"La base de données n'est pas configurée. Ajoute DATABASE_URL dans Render."}); return true; }
 async function currentUser(req) {
   if (!pool) return null;
   const token = cookieValue(req, SESSION_COOKIE); if (!token) return null;
-  const result = await pool.query(`SELECT u.id, u.username FROM autodex_sessions s JOIN autodex_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>NOW()`, [hashToken(token)]);
+  const result = await pool.query(`SELECT u.id, u.username, u.profile_photo FROM autodex_sessions s JOIN autodex_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>NOW()`, [hashToken(token)]);
   return result.rows[0] || null;
 }
 async function requireUser(req,res,next) {
@@ -94,7 +95,20 @@ app.post("/api/auth/login", async (req,res) => {
   } catch(e) { console.error(e); res.status(500).json({error:"Impossible de se connecter pour le moment."}); }
 });
 app.post("/api/auth/logout", async (req,res) => { try { const token=cookieValue(req,SESSION_COOKIE); if(pool&&token) await pool.query("DELETE FROM autodex_sessions WHERE token_hash=$1",[hashToken(token)]); clearSessionCookie(res); res.json({ok:true}); } catch(e) { clearSessionCookie(res); res.json({ok:true}); } });
-app.get("/api/auth/me", async (req,res) => { if(dbRequired(res)) return; try { const user=await currentUser(req); res.json({user:user?{username:user.username}:null}); } catch(e) { console.error(e); res.status(500).json({error:"Erreur de vérification du compte."}); } });
+app.get("/api/auth/me", async (req,res) => { if(dbRequired(res)) return; try { const user=await currentUser(req); res.json({user:user?{username:user.username,profilePhoto:user.profile_photo||null}:null}); } catch(e) { console.error(e); res.status(500).json({error:"Erreur de vérification du compte."}); } });
+app.put("/api/profile", requireUser, async (req,res) => {
+  try {
+    const username=String(req.body?.username||"").trim();
+    const key=username.toLocaleLowerCase("fr-FR");
+    const profilePhoto=req.body?.profilePhoto===null?null:String(req.body?.profilePhoto||"");
+    if(!/^[\p{L}\p{N}_-]{3,24}$/u.test(username)) return res.status(400).json({error:"Le nom doit contenir 3 à 24 caractères : lettres, chiffres, _ ou - uniquement."});
+    if(profilePhoto && (!/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(profilePhoto) || Buffer.byteLength(profilePhoto)>700*1024)) return res.status(400).json({error:"Photo invalide ou trop lourde. Choisis une image plus petite."});
+    const duplicate=await pool.query("SELECT id FROM autodex_users WHERE username_key=$1 AND id<>$2",[key,req.autodexUser.id]);
+    if(duplicate.rowCount) return res.status(409).json({error:"Ce nom est déjà utilisé. Choisis-en un autre."});
+    const result=await pool.query("UPDATE autodex_users SET username=$1,username_key=$2,profile_photo=$3 WHERE id=$4 RETURNING username,profile_photo",[username,key,profilePhoto||null,req.autodexUser.id]);
+    res.json({ok:true,user:{username:result.rows[0].username,profilePhoto:result.rows[0].profile_photo||null}});
+  } catch(e){console.error(e);if(e?.code==="23505")return res.status(409).json({error:"Ce nom est déjà utilisé. Choisis-en un autre."});res.status(500).json({error:"Impossible d'enregistrer le profil."});}
+});
 app.get("/api/cars", requireUser, async (req,res) => { try { const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[req.autodexUser.id]); res.json({cars:r.rows[0]?.cars_json||[]}); } catch(e) { console.error(e); res.status(500).json({error:"Impossible de charger la collection."}); } });
 app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body?.cars; if(!Array.isArray(cars)||cars.length>500) return res.status(400).json({error:"Collection invalide (500 voitures maximum)."}); const bytes=Buffer.byteLength(JSON.stringify(cars)); if(bytes>180*1024*1024) return res.status(413).json({error:"Collection trop volumineuse (limite de 180 Mo). Compresse les photos ou réduis leur nombre."}); await pool.query(`INSERT INTO autodex_cars(user_id,cars_json,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(user_id) DO UPDATE SET cars_json=EXCLUDED.cars_json,updated_at=NOW()`,[req.autodexUser.id,JSON.stringify(cars)]); res.json({ok:true}); } catch(e) {
   console.error("Save collection failed:", { code: e?.code, message: e?.message, detail: e?.detail });
@@ -109,7 +123,7 @@ app.put("/api/cars", requireUser, async (req,res) => { try { const cars=req.body
 app.get("/api/users/search", requireUser, async (req,res) => {
   try {
     const q=String(req.query.q||"").trim(); if(q.length<2)return res.json({users:[]});
-    const result=await pool.query(`SELECT u.id,u.username,
+    const result=await pool.query(`SELECT u.id,u.username,u.profile_photo AS "profilePhoto",
       CASE WHEN f.status='accepted' THEN 'friend' WHEN f.status='pending' AND f.user_id=$1 THEN 'sent' WHEN f.status='pending' AND f.friend_id=$1 THEN 'incoming' ELSE 'none' END AS relation
       FROM autodex_users u LEFT JOIN autodex_friendships f ON ((f.user_id=$1 AND f.friend_id=u.id) OR (f.friend_id=$1 AND f.user_id=u.id))
       WHERE u.id<>$1 AND u.username ILIKE $2 ORDER BY u.username LIMIT 12`,[req.autodexUser.id,`%${q.replace(/[\\%_]/g,'\\$&')}%`]);
@@ -119,15 +133,15 @@ app.get("/api/users/search", requireUser, async (req,res) => {
 app.get("/api/friends", requireUser, async (req,res) => {
   try {
     const [friends,incoming,outgoing]=await Promise.all([
-      pool.query(`SELECT u.id,u.username,f.id AS friendship_id FROM autodex_friendships f JOIN autodex_users u ON u.id=CASE WHEN f.user_id=$1 THEN f.friend_id ELSE f.user_id END WHERE (f.user_id=$1 OR f.friend_id=$1) AND f.status='accepted' ORDER BY u.username`,[req.autodexUser.id]),
-      pool.query(`SELECT f.id,u.username,f.created_at FROM autodex_friendships f JOIN autodex_users u ON u.id=f.user_id WHERE f.friend_id=$1 AND f.status='pending' ORDER BY f.created_at DESC`,[req.autodexUser.id]),
-      pool.query(`SELECT f.id,u.username,f.created_at FROM autodex_friendships f JOIN autodex_users u ON u.id=f.friend_id WHERE f.user_id=$1 AND f.status='pending' ORDER BY f.created_at DESC`,[req.autodexUser.id])
+      pool.query(`SELECT u.id,u.username,u.profile_photo AS "profilePhoto",f.id AS friendship_id FROM autodex_friendships f JOIN autodex_users u ON u.id=CASE WHEN f.user_id=$1 THEN f.friend_id ELSE f.user_id END WHERE (f.user_id=$1 OR f.friend_id=$1) AND f.status='accepted' ORDER BY u.username`,[req.autodexUser.id]),
+      pool.query(`SELECT f.id,u.username,u.profile_photo AS "profilePhoto",f.created_at FROM autodex_friendships f JOIN autodex_users u ON u.id=f.user_id WHERE f.friend_id=$1 AND f.status='pending' ORDER BY f.created_at DESC`,[req.autodexUser.id]),
+      pool.query(`SELECT f.id,u.username,u.profile_photo AS "profilePhoto",f.created_at FROM autodex_friendships f JOIN autodex_users u ON u.id=f.friend_id WHERE f.user_id=$1 AND f.status='pending' ORDER BY f.created_at DESC`,[req.autodexUser.id])
     ]);res.json({friends:friends.rows,incoming:incoming.rows,outgoing:outgoing.rows});
   }catch(e){console.error(e);res.status(500).json({error:"Impossible de charger les amis."});}
 });
 app.post("/api/friends/request", requireUser, async (req,res) => {
   try{
-    const username=String(req.body?.username||"").trim();const target=await pool.query("SELECT id,username FROM autodex_users WHERE username_key=$1",[username.toLocaleLowerCase("fr-FR")]);
+    const username=String(req.body?.username||"").trim();const target=await pool.query("SELECT id,username,profile_photo FROM autodex_users WHERE username_key=$1",[username.toLocaleLowerCase("fr-FR")]);
     if(!target.rowCount)return res.status(404).json({error:"Aucun compte trouvé avec ce pseudo."});const targetId=target.rows[0].id;
     if(String(targetId)===String(req.autodexUser.id))return res.status(400).json({error:"Tu ne peux pas t'ajouter toi-même."});
     const existing=await pool.query("SELECT id,status,user_id,friend_id FROM autodex_friendships WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)",[req.autodexUser.id,targetId]);
@@ -144,11 +158,11 @@ app.delete("/api/friends/:id", requireUser, async (req,res) => {
   catch(e){console.error(e);res.status(500).json({error:"Impossible de supprimer cette relation."});}
 });
 app.get("/api/users/:username/profile", requireUser, async (req,res) => {
-  try{const target=await pool.query("SELECT id,username FROM autodex_users WHERE username_key=$1",[String(req.params.username).toLocaleLowerCase("fr-FR")]);if(!target.rowCount)return res.status(404).json({error:"Profil introuvable."});const user=target.rows[0],own=String(user.id)===String(req.autodexUser.id);
+  try{const target=await pool.query("SELECT id,username,profile_photo FROM autodex_users WHERE username_key=$1",[String(req.params.username).toLocaleLowerCase("fr-FR")]);if(!target.rowCount)return res.status(404).json({error:"Profil introuvable."});const user=target.rows[0],own=String(user.id)===String(req.autodexUser.id);
     if(!own){const rel=await pool.query("SELECT 1 FROM autodex_friendships WHERE status='accepted' AND ((user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1))",[req.autodexUser.id,user.id]);if(!rel.rowCount)return res.status(403).json({error:"Tu dois être ami avec ce compte pour voir sa collection."});}
     const r=await pool.query("SELECT cars_json FROM autodex_cars WHERE user_id=$1",[user.id]);const cars=r.rows[0]?.cars_json||[];const brands={};let total=0,priced=0;
     for(const c of cars){const b=String(c.make||"Autre");brands[b]=(brands[b]||0)+1;if(c.price!==""&&c.price!==null&&Number.isFinite(Number(c.price))){total+=Number(c.price);priced++;}}
-    res.json({username:user.username,own,cars,stats:{carCount:cars.length,brandCount:Object.keys(brands).length,totalValue:priced?total:null,pricedCount:priced,brands:Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}))}});
+    res.json({username:user.username,profilePhoto:user.profile_photo||null,own,cars,stats:{carCount:cars.length,brandCount:Object.keys(brands).length,totalValue:priced?total:null,pricedCount:priced,brands:Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}))}});
   }catch(e){console.error(e);res.status(500).json({error:"Impossible de charger ce profil."});}
 });
 

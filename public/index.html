@@ -91,14 +91,20 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 @media(max-width:650px){.social-grid{grid-template-columns:1fr}.profile-cars{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-car img{height:auto;aspect-ratio:4/3}}.loading-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
 @media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:21px}.hero:after{right:8px;font-size:75px}.hero .primary{align-self:flex-end}.photo{height:150px}}
 @media(max-width:520px){.wrap{padding:17px 12px 35px}header{margin-bottom:18px}.header-pill{display:none}.hero{display:block}.hero h2{font-size:28px}.hero p{max-width:95%;margin-bottom:17px}.hero:after{right:5px;bottom:-15px;font-size:65px}.stats{gap:8px}.stat{padding:12px 10px}.stat .num{font-size:21px}.stat .label{font-size:10px}.grid{gap:10px}.photo{height:125px}.card-body{padding:11px}.model{font-size:15px}.price{font-size:17px}.toolbar select{flex:1;min-width:0}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+
+/* Menu principal et espace profil */
+.account-pill{position:relative}.menu-toggle{display:flex;align-items:center;gap:8px;padding:9px 12px!important;font-weight:800}.menu-toggle .hamburger{font-size:18px;line-height:1}.menu-dropdown{display:none;position:absolute;right:0;top:calc(100% + 9px);z-index:1500;width:220px;padding:7px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px #0008}.menu-dropdown.open{display:block}.menu-dropdown button{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:0;border-radius:9px;background:transparent;color:var(--text);text-align:left;font-weight:700}.menu-dropdown button:hover{background:var(--panel2)}.menu-dropdown .menu-logout{color:#ffaaa0}.profile-view{display:none}.profile-shell{max-width:850px;margin:8px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(16px,3vw,28px)}.profile-heading{display:flex;align-items:center;gap:17px;margin-bottom:22px}.profile-avatar{width:108px;height:108px;flex:0 0 108px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,#333a48,#171a20);border:2px solid var(--accent);font-size:40px}.profile-avatar img,.mini-avatar img{width:100%;height:100%;object-fit:cover;display:block}.profile-heading h2{margin:0 0 6px;font-size:26px;overflow-wrap:anywhere}.profile-heading p{margin:0;color:var(--muted);font-size:13px}.profile-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.profile-edit-grid .field input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:10px}.profile-edit-grid .field.full{grid-column:1/-1}.profile-photo-actions{display:flex;flex-wrap:wrap;gap:8px}.profile-photo-actions button,.profile-photo-actions label{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-weight:700;font-size:12px;cursor:pointer}.profile-save-message{font-size:12px;color:var(--muted);min-height:18px;margin-top:10px}.mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;background:#252a34;border:1px solid var(--line);font-size:17px}.social-person{display:flex;align-items:center;gap:9px;min-width:0}.social-person strong{overflow-wrap:anywhere}.profile-view .profile-stats{margin:18px 0}.profile-back{margin-bottom:15px}
+@media(max-width:520px){.account-pill{gap:5px}.menu-toggle{padding:8px 10px!important}.profile-heading{align-items:flex-start}.profile-avatar{width:82px;height:82px;flex-basis:82px;font-size:32px}.profile-heading h2{font-size:22px}.profile-edit-grid{grid-template-columns:1fr}.profile-edit-grid .field.full{grid-column:auto}}
+
 </style>
 </head>
 <body>
 <div class="wrap" id="appContent" style="display:none">
   <header>
     <div class="brand"><div class="logo">🏁</div><div><h1>AutoDex</h1><div class="subtitle">Ta collection automobile</div></div></div>
-    <div class="account-pill"><span class="header-pill">🚘 TON GARAGE PERSONNEL</span><span id="accountName" class="header-pill"></span><button id="logoutBtn" type="button">Déconnexion</button></div>
+    <div class="account-pill"><span class="header-pill">🚘 TON GARAGE PERSONNEL</span><span id="accountName" class="header-pill"></span><button id="menuToggle" class="menu-toggle" type="button" aria-haspopup="true" aria-expanded="false"><span class="hamburger">☰</span><span>Menu</span></button><div class="menu-dropdown" id="menuDropdown"><button type="button" id="homeNav">🏠 Accueil</button><button type="button" id="profileNav">👤 Mon profil</button><button type="button" class="menu-logout" id="logoutBtn">↪ Déconnexion</button></div></div>
   </header>
+  <div id="homeView">
   <section class="hero">
     <div><h2>Chaque voiture a son histoire.</h2><p>Collectionne les voitures que tu croises, classe-les par marque et garde leur prix dans ton catalogue personnel.</p></div>
     <button class="primary" id="addTop">＋ Ajouter une voiture</button>
@@ -134,6 +140,23 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
   <div class="section-head"><h3>Mon index</h3><div class="count" id="countLabel">0 voiture</div></div>
   <div class="grid" id="carGrid"></div>
   <footer>AutoDex · Ta collection est enregistrée sur ton compte et accessible sur tes appareils.<br>Les prix issus du marché sont indicatifs et dépendent de la disponibilité des annonces comparables.</footer>
+  </div>
+  <section class="profile-view" id="profileView">
+    <button class="secondary profile-back" id="profileBack" type="button">← Retour à l’accueil</button>
+    <div class="profile-shell">
+      <div class="profile-heading"><div class="profile-avatar" id="profileAvatar">👤</div><div><h2 id="profileDisplayName">Mon profil</h2><p>Ton identité AutoDex et les statistiques de ta collection.</p></div></div>
+      <h3>📊 Ma collection en chiffres</h3>
+      <div class="profile-stats"><div class="profile-stat"><strong id="ownCarCount">0</strong><span>Voitures collectionnées</span></div><div class="profile-stat"><strong id="ownBrandCount">0</strong><span>Marques différentes</span></div><div class="profile-stat"><strong id="ownTotalValue">—</strong><span>Valeur estimée</span></div></div>
+      <div class="social-muted" id="ownPricedCount"></div>
+      <h3 style="margin-top:24px">⚙️ Modifier mon profil</h3>
+      <form id="profileForm" class="profile-edit-grid">
+        <div class="field full"><label for="profileUsername">Nom affiché / pseudo</label><input id="profileUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-zÀ-ÿ0-9_-]{3,24}" required autocomplete="nickname"><div class="hint">3 à 24 caractères : lettres, chiffres, _ ou -. Le nom doit être unique.</div></div>
+        <div class="field full"><label>Photo de profil</label><div class="profile-photo-actions"><label for="profilePhotoInput">🖼️ Choisir depuis ma galerie</label><input id="profilePhotoInput" type="file" accept="image/*" style="display:none"><button type="button" id="removeProfilePhoto">Retirer la photo</button></div><div class="hint">L’image sera réduite automatiquement et affichée aussi à côté de ton nom dans la liste d’amis.</div></div>
+        <div class="field full"><button type="submit" class="primary" id="saveProfileBtn">Enregistrer les modifications</button><div class="profile-save-message" id="profileSaveMessage" role="status"></div></div>
+      </form>
+      <h3 style="margin-top:24px">🏷️ Mes marques</h3><div class="brand-bars" id="ownBrandList"></div>
+    </div>
+  </section>
 </div>
 
 <div id="loadingScreen" class="loading-screen">Chargement d’AutoDex…</div>
@@ -177,6 +200,8 @@ footer{color:#777f8d;font-size:11px;text-align:center;margin-top:30px;line-heigh
 </div>
 <script>
 let cars = [];
+let currentUser = {username:"", profilePhoto:null};
+let profilePhotoDraft = null;
 let editingId = null;
 let selectedPhoto = "";
 let currentPriceMin = null, currentPriceMax = null;
@@ -363,7 +388,7 @@ document.addEventListener("keydown",e=>{
 
 async function refreshSocial(){
   try{const data=await api("/api/friends");
-    const list=(items,kind)=>items.length?items.map(x=>`<div class="social-item"><span><strong>${escapeHtml(x.username)}</strong></span><span>${kind==="incoming"?`<button data-accept="${x.id}">Accepter</button> <button data-remove="${x.id}">Refuser</button>`:kind==="outgoing"?`<button data-remove="${x.id}">Annuler</button>`:`<button data-profile="${escapeHtml(x.username)}">Voir le profil</button> <button data-remove="${x.friendship_id}">Retirer</button>`}</span></div>`).join(""):'<div class="social-muted">Rien pour le moment.</div>';
+    const list=(items,kind)=>items.length?items.map(x=>`<div class="social-item"><span class="social-person"><span class="mini-avatar">${x.profilePhoto?`<img src="${x.profilePhoto}" alt="">`:"👤"}</span><strong>${escapeHtml(x.username)}</strong></span><span>${kind==="incoming"?`<button data-accept="${x.id}">Accepter</button> <button data-remove="${x.id}">Refuser</button>`:kind==="outgoing"?`<button data-remove="${x.id}">Annuler</button>`:`<button data-profile="${escapeHtml(x.username)}">Voir le profil</button> <button data-remove="${x.friendship_id}">Retirer</button>`}</span></div>`).join(""):'<div class="social-muted">Rien pour le moment.</div>';
     $("friendsList").innerHTML=list(data.friends,"friends");$("incomingList").innerHTML=list(data.incoming,"incoming");$("outgoingList").innerHTML=list(data.outgoing,"outgoing");
     document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api(`/api/friends/${b.dataset.accept}/accept`,{method:"POST",body:"{}"});showSocialMessage("Demande acceptée !");await refreshSocial();}catch(e){showSocialMessage(e.message);}});
     document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=async()=>{try{await api(`/api/friends/${b.dataset.remove}`,{method:"DELETE"});showSocialMessage("C'est fait.");$("friendProfile").style.display="none";await refreshSocial();}catch(e){showSocialMessage(e.message);}});
@@ -382,7 +407,7 @@ async function loadFriendProfile(username){
   const panel=$("friendProfile");panel.style.display="block";panel.innerHTML='<div class="social-muted">Chargement du profil…</div>';
   try{const p=await api(`/api/users/${encodeURIComponent(username)}/profile`);const st=p.stats;const priced=st.totalValue===null?"—":money(st.totalValue);const brands=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Aucune marque pour le moment.</span>';
     const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${carPriceLabel(c)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
-    panel.innerHTML=`<div class="social-top"><h4 style="margin:0">🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
+    panel.innerHTML=`<div class="social-top"><h4 style="margin:0;display:flex;align-items:center;gap:8px">${p.profilePhoto?`<span class="mini-avatar"><img src="${p.profilePhoto}" alt=""></span>`:`<span class="mini-avatar">👤</span>`} 🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
     $("closeFriendProfile").onclick=()=>{panel.style.display="none";};
   }catch(e){panel.innerHTML=`<div class="social-muted">${escapeHtml(e.message)}</div>`;}
 }
@@ -391,10 +416,40 @@ $("friendSearchForm").addEventListener("submit",e=>{e.preventDefault();searchUse
 
 function setAuthMode(mode){authMode=mode; const login=mode==="login"; $("loginTab").classList.toggle("active",login); $("registerTab").classList.toggle("active",!login); $("authTitle").textContent=login?"Content de te revoir !":"Crée ton compte AutoDex"; $("authDescription").textContent=login?"Connecte-toi pour retrouver ta collection sur tous tes appareils.":"Choisis un nom d’utilisateur unique pour sauvegarder ta collection en ligne."; $("authSubmit").textContent=login?"Se connecter":"Créer mon compte"; $("authPassword").autocomplete=login?"current-password":"new-password"; $("authError").style.display="none"; }
 function showAuth(error=""){ $("loadingScreen").style.display="none"; $("appContent").style.display="none"; $("authScreen").style.display="flex"; if(error){$("authError").textContent=error;$("authError").style.display="block";} }
-async function enterApp(user){ $("authScreen").style.display="none"; $("loadingScreen").style.display="flex"; try { const data=await api("/api/cars"); cars=Array.isArray(data.cars)?data.cars:[]; $("accountName").textContent="👤 "+user.username; $("appContent").style.display="block"; $("loadingScreen").style.display="none"; render(); refreshSocial(); } catch(e){showAuth(e.message);} }
+async function enterApp(user){ currentUser={username:user.username,profilePhoto:user.profilePhoto||null}; $("authScreen").style.display="none"; $("loadingScreen").style.display="flex"; try { const data=await api("/api/cars"); cars=Array.isArray(data.cars)?data.cars:[]; $("accountName").textContent="👤 "+user.username; $("appContent").style.display="block"; $("loadingScreen").style.display="none"; showMainView("home"); render(); refreshSocial(); } catch(e){showAuth(e.message);} }
 $("loginTab").addEventListener("click",()=>setAuthMode("login"));
 $("registerTab").addEventListener("click",()=>setAuthMode("register"));
 $("authForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("authSubmit");button.disabled=true;button.textContent="Patiente…";$("authError").style.display="none";try{const result=await api(authMode==="login"?"/api/auth/login":"/api/auth/register",{method:"POST",body:JSON.stringify({username:$("authUsername").value.trim(),password:$("authPassword").value})});$("authPassword").value="";await enterApp(result.user);}catch(err){$("authError").textContent=err.message;$("authError").style.display="block";}finally{button.disabled=false;button.textContent=authMode==="login"?"Se connecter":"Créer mon compte";}});
+function showMainView(view){
+  const isProfile=view==="profile";
+  $("homeView").style.display=isProfile?"none":"block";
+  $("profileView").style.display=isProfile?"block":"none";
+  $("menuDropdown").classList.remove("open");$("menuToggle").setAttribute("aria-expanded","false");
+  if(isProfile)loadOwnProfile();
+}
+$("menuToggle").addEventListener("click",()=>{const open=$("menuDropdown").classList.toggle("open");$("menuToggle").setAttribute("aria-expanded",String(open));});
+document.addEventListener("click",e=>{if(!e.target.closest(".account-pill")){$("menuDropdown").classList.remove("open");$("menuToggle").setAttribute("aria-expanded","false");}});
+$("homeNav").addEventListener("click",()=>showMainView("home"));
+$("profileNav").addEventListener("click",()=>showMainView("profile"));
+$("profileBack").addEventListener("click",()=>showMainView("home"));
+function setProfileAvatar(photo){$("profileAvatar").innerHTML=photo?`<img src="${photo}" alt="Photo de profil">`:"👤";}
+async function loadOwnProfile(){
+  try{
+    const p=await api(`/api/users/${encodeURIComponent(currentUser.username)}/profile`);const st=p.stats;
+    currentUser={username:p.username,profilePhoto:p.profilePhoto||null};profilePhotoDraft=currentUser.profilePhoto;
+    $("profileUsername").value=p.username;$("profileDisplayName").textContent=p.username;$("accountName").textContent="👤 "+p.username;setProfileAvatar(profilePhotoDraft);
+    $("ownCarCount").textContent=st.carCount;$("ownBrandCount").textContent=st.brandCount;$("ownTotalValue").textContent=st.totalValue===null?"—":money(st.totalValue);$("ownPricedCount").textContent=`${st.pricedCount} voiture(s) avec un prix renseigné`;
+    $("ownBrandList").innerHTML=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Ajoute des voitures pour voir tes marques ici.</span>';
+    $("profileSaveMessage").textContent="";
+  }catch(e){$("profileSaveMessage").textContent=e.message;}
+}
+$("profilePhotoInput").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith("image/")){ $("profileSaveMessage").textContent="Choisis un fichier image.";return; }
+  try{const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=data;});const canvas=document.createElement("canvas");const scale=Math.min(1,480/Math.max(img.width,img.height));canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);profilePhotoDraft=canvas.toDataURL("image/jpeg",0.82);setProfileAvatar(profilePhotoDraft);$("profileSaveMessage").textContent="Aperçu mis à jour. Enregistre les modifications pour la sauvegarder.";}catch(err){$("profileSaveMessage").textContent="Impossible de lire cette image.";}finally{e.target.value="";}
+});
+$("removeProfilePhoto").addEventListener("click",()=>{profilePhotoDraft=null;setProfileAvatar(null);$("profileSaveMessage").textContent="Photo retirée de l’aperçu. Enregistre pour confirmer.";});
+$("profileUsername").addEventListener("input",()=>{$("profileDisplayName").textContent=$("profileUsername").value.trim()||"Mon profil";});
+$("profileForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("saveProfileBtn");button.disabled=true;button.textContent="Enregistrement…";$("profileSaveMessage").textContent="";try{const result=await api("/api/profile",{method:"PUT",body:JSON.stringify({username:$("profileUsername").value.trim(),profilePhoto:profilePhotoDraft})});currentUser={username:result.user.username,profilePhoto:result.user.profilePhoto||null};profilePhotoDraft=currentUser.profilePhoto;$("accountName").textContent="👤 "+currentUser.username;$("profileDisplayName").textContent=currentUser.username;setProfileAvatar(profilePhotoDraft);$("profileSaveMessage").textContent="Profil enregistré !";await refreshSocial();}catch(err){$("profileSaveMessage").textContent=err.message;}finally{button.disabled=false;button.textContent="Enregistrer les modifications";}});
 $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST",body:"{}"});}catch{}cars=[];showAuth();setAuthMode("login");});
 (async()=>{try{const data=await api("/api/auth/me");if(data.user)await enterApp(data.user);else showAuth();}catch(e){showAuth(e.message);}})();
 </script>

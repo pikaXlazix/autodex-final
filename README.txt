@@ -21,3 +21,10 @@ V10 — Estimations modèles rares
 - Ajout d’une référence spécifique pour la Koenigsegg CC8S afin que le CSV généraliste ne la sous-évalue pas.
 - Fourchette large et indicateur de confiance faible car les transactions publiques comparables sont extrêmement rares.
 - Google AI Overviews n’est pas utilisé directement : ce n’est pas une API stable d’estimation. Les sources publiques sont indiquées dans la réponse de l’API.
+
+NOUVEAUTÉS — MENU ET PROFIL
+- Le bouton Déconnexion est remplacé par un menu en haut à droite : Accueil, Mon profil et Déconnexion.
+- La page Mon profil permet de modifier le pseudo, choisir/retirer une photo de profil, et consulter les statistiques de la collection.
+- La photo est redimensionnée dans le navigateur avant envoi et enregistrée sur le compte ; elle apparaît dans la liste d'amis et les profils d'amis.
+- La base existante est migrée automatiquement avec la colonne profile_photo au démarrage du serveur.
+- Le pseudo doit rester unique et respecter les règles habituelles (3 à 24 caractères, lettres/chiffres/_/-).
