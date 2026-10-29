@@ -526,4 +526,16 @@ $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logou
 (async()=>{try{const data=await api("/api/auth/me");if(data.user)await enterApp(data.user);else showAuth();}catch(e){showAuth(e.message);}})();
 </script>
 </body>
-</html>
+</html><style id="autodex-reference-skin-assets">
+/* Real pixel assets extracted from the user's approved skin reference. */
+.card,.profile-car{position:relative;isolation:isolate;}
+.card::before,.profile-car::before{content:"";position:absolute;inset:0;z-index:20;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;opacity:1;}
+.card[data-skin="bronze"]::before,.profile-car[data-skin="bronze"]::before{background-image:url('/skins/bronze.png')}
+.card[data-skin="silver"]::before,.profile-car[data-skin="silver"]::before{background-image:url('/skins/silver.png')}
+.card[data-skin="gold"]::before,.profile-car[data-skin="gold"]::before{background-image:url('/skins/gold.png')}
+.card[data-skin="platinum"]::before,.profile-car[data-skin="platinum"]::before{background-image:url('/skins/platinum.png')}
+.card[data-skin="diamond"]::before,.profile-car[data-skin="diamond"]::before{background-image:url('/skins/diamond.png')}
+.card[data-skin="rainbow"]::before,.profile-car[data-skin="rainbow"]::before{background-image:url('/skins/rainbow.png')}
+.card[data-skin="galaxy"]::before,.profile-car[data-skin="galaxy"]::before{background-image:url('/skins/galaxy.png')}
+.card[data-skin="godly"]::before,.profile-car[data-skin="godly"]::before{background-image:url('/skins/godly.png')}
+</style>
