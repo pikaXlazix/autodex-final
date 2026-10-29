@@ -252,6 +252,20 @@ app.get("/api/price-estimate", async (req, res) => {
   const model = String(req.query.model || "").trim();
   const year = Number(req.query.year);
   if (!make || !model) return res.status(400).json({ error: "Indique une marque et un modèle." });
+  // Référence spécialisée pour la CC8S : le CSV généraliste peut sous-évaluer les modèles
+  // ultra-rares. Les estimations publiques sont très dispersées et aucune vente publique
+  // récente ne permet d'établir une cote certaine ; on affiche donc une large fourchette.
+  if (normalizeCarName(make) === "koenigsegg" && normalizeCarName(model) === "cc8s") {
+    return res.json({
+      price: 1500000, priceMin: 1100000, priceMax: 2200000,
+      make: "Koenigsegg", model: "CC8S", year: Number.isInteger(year) && year >= 1886 && year <= 2100 ? year : null,
+      basis: "rare-model-editorial-range", confidence: "faible — très peu de transactions publiques",
+      source: "Fourchette indicative de modèle ultra-rare : références spécialisées divergentes ; aucune vente publique récente suffisamment comparable. À confirmer selon châssis, provenance, état et historique d'entretien.",
+      sourceUrl: "https://auto-index.co/car/koenigsegg-cc8s-2002",
+      additionalSources: ["https://hiconium.com/vehicles/koenigsegg/cc8s", "https://www.octanefiles.com/cars/koenigsegg-cc8s"],
+      license: "Références publiques consultées ; estimation indicative, non une expertise"
+    });
+  }
   if (model === "Autre modèle" || make === "Autre / non listée") return sendFallback(res, make, model, year, "modèle personnalisé");
   if (isRareHypercarReference(make, model)) return sendFallback(res, make, model, year, "référence dédiée à cette hypercar/version rare");
   try {

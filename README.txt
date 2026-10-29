@@ -15,3 +15,9 @@ Changements V9 :
 Installation : remplace les fichiers server.js et public/index.html dans le dépôt, commit puis push. Render doit redéployer.
 
 Important : la correction ne peut pas garantir de résoudre une panne liée aux limites du fournisseur PostgreSQL ou à une configuration de compte. Si la sauvegarde échoue encore, lire le log « Save collection failed » sur Render : le code d'erreur permettra de cibler la cause. Ne supprimez pas la base de données.
+
+
+V10 — Estimations modèles rares
+- Ajout d’une référence spécifique pour la Koenigsegg CC8S afin que le CSV généraliste ne la sous-évalue pas.
+- Fourchette large et indicateur de confiance faible car les transactions publiques comparables sont extrêmement rares.
+- Google AI Overviews n’est pas utilisé directement : ce n’est pas une API stable d’estimation. Les sources publiques sont indiquées dans la réponse de l’API.
