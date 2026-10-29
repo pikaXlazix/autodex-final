@@ -343,8 +343,29 @@ function totalCollectionValue(list=cars){return list.reduce((sum,c)=>{const n=Nu
 function highestUnlockedSkin(value=totalCollectionValue()){let best=null;for(const skin of REWARD_SKINS){if(value>=skin.threshold)best=skin;}return best;}
 function skinForValue(value=totalCollectionValue()){return REWARD_SKINS.filter(s=>value>=s.threshold).map(s=>s.id)}
 function renderRewards(){const total=totalCollectionValue();const unlocked=skinForValue(total);if(!unlocked.includes(equippedSkin)){equippedSkin=highestUnlockedSkin(total)?.id||"bronze";}$("rewardsTotal").textContent=money(total);$("rewardGrid").innerHTML=REWARD_SKINS.map(s=>{const yes=unlocked.includes(s.id),selected=equippedSkin===s.id;const progress=Math.min(100,total/s.threshold*100);return `<article class="reward-card ${yes?"unlocked":""}" data-skin="${s.id}"><div class="reward-symbol">${s.emblem}</div><h3>${s.name}</h3><div class="reward-threshold">${money(s.threshold)}</div><div class="reward-state">${yes?(selected?"✓ Équipé":"✓ Débloqué"):`${Math.floor(progress)} % · À débloquer`}</div><button type="button" data-equip-skin="${s.id}" ${yes?"":"disabled"}>${selected?"Skin équipé":yes?"Équiper ce skin":"Verrouillé 🔒"}</button><div class="hint" style="margin-top:9px;text-align:center">${s.description}</div></article>`}).join("");$("rewardGrid").querySelectorAll("[data-equip-skin]").forEach(b=>b.onclick=()=>equipDisplaySkin(b.dataset.equipSkin));renderRewardPreview();}
-function renderRewardPreview(){const s=REWARD_SKINS.find(x=>x.id===equippedSkin)||REWARD_SKINS[0];$("rewardPreview").innerHTML=`<article class="card preview-car" data-skin="${s.id}"><div class="photo"><div class="placeholder">🏎️</div><span class="make-tag">Aperçu ${s.name}</span></div><div class="skin-divider" data-emblem="${s.emblem}"></div><div class="card-body"><div class="model">911 GT3</div><div class="meta">Fiche de ta collection</div><div class="price">130 000 €</div><div class="card-actions"><button class="small-btn" type="button" disabled>✎ Modifier</button><button class="small-btn delete" type="button" disabled>Supprimer</button></div></div></article>`;}
+function renderRewardPreview(){const s=REWARD_SKINS.find(x=>x.id===equippedSkin)||REWARD_SKINS[0];$("rewardPreview").innerHTML=`<article class="card preview-car" data-skin="${s.id}" data-motif="speed"><div class="photo"><div class="placeholder">🏎️</div><span class="make-tag">Aperçu ${s.name}</span></div><div class="skin-divider" data-emblem="${s.emblem}"></div><div class="card-body"><div class="model">911 GT3</div><div class="meta">Fiche de ta collection</div><div class="price">130 000 €</div><div class="card-actions"><button class="small-btn" type="button" disabled>✎ Modifier</button><button class="small-btn delete" type="button" disabled>Supprimer</button></div></div></article>`;}
 async function equipDisplaySkin(id){const skin=REWARD_SKINS.find(s=>s.id===id);if(!skin||totalCollectionValue()<skin.threshold)return;const previous=equippedSkin;equippedSkin=id;renderRewards();try{const result=await api("/api/profile/skin",{method:"PUT",body:JSON.stringify({displaySkin:id})});equippedSkin=result.displaySkin||id;render();renderRewards();}catch(e){equippedSkin=previous;renderRewards();alert(e.message||"Impossible d'enregistrer le skin.");}}
+// Motifs décoratifs génériques (dessins originaux, un par type de voiture) utilisés en filigrane dans les fiches.
+const MOTIF_SVGS={
+  speed:"<path d='M4 30L18 6M14 34L28 10M24 36L34 18' stroke='#000' stroke-width='3' stroke-linecap='round' fill='none'/>",
+  suv:"<path d='M2 32L14 10L22 23L28 15L38 32Z' stroke='#000' stroke-width='3' stroke-linejoin='round' fill='none'/>",
+  electric:"<path d='M22 2L8 22h10l-3 16L32 16H22z' fill='#000'/>",
+  classic:"<circle cx='20' cy='20' r='8' fill='none' stroke='#000' stroke-width='3'/><path d='M20 3v6M20 31v6M3 20h6M31 20h6M8 8l4 4M28 28l4 4M32 8l-4 4M12 28l-4 4' stroke='#000' stroke-width='4' stroke-linecap='round'/>",
+  road:"<circle cx='20' cy='20' r='14' fill='none' stroke='#000' stroke-width='3'/><circle cx='20' cy='20' r='3.5' fill='#000'/><path d='M20 7v10M20 23v10M7 20h10M23 20h10' stroke='#000' stroke-width='3' stroke-linecap='round'/>"
+};
+Object.entries(MOTIF_SVGS).forEach(([name,body])=>{
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'><g transform='translate(8 8)'>${body}</g></svg>`;
+  document.documentElement.style.setProperty(`--motif-${name}`,`url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+});
+function carMotif(c){
+  const make=String(c?.make||"").toLowerCase(), model=String(c?.model||"").toLowerCase(), year=Number(c?.year)||0, full=`${make} ${model}`;
+  if(/tesla|rimac|polestar|nio|yangwang/.test(make)||/e-tron|ioniq|\bev\d|taycan|\beq[a-z]\b|nevera|lyriq|spectre|ë-|\be-\d|\bid\.|mach-e|leaf|ariya|bz4x|folgore|electric|cybertruck|celestiq|born|tavascan|emeya|eletre|evija|\bix\d?\b|\bi[3-8]\b/.test(model)) return "electric";
+  if((year&&year<=1989)||/e-type|2000gt|\b356\b|\b550\b|917|\bgto\b|dino|miura|countach|diablo|traction|2cv|xk1\d\d|gt40|stratos|mangusta|pantera|silver shadow|type 35|atlantic|testarossa|\bf40\b|m1\b|delta|205|037/.test(model)) return "classic";
+  if(/urus|cayenne|macan|bentayga|cullinan|purosangue|dbx|levante|grecale|stelvio|tonale|\bx[1-7]\b|\bq[2-8]\b|\brs q|\bsq[5-8]\b|\bgl[abces]\b|g 63|g 65|g 500|g-class|escalade|tahoe|bronco|defender|land cruiser|patrol|countryman|duster|sportage|tucson|kuga|hilux|raptor|touareg|\bxm\b|suv/.test(model)) return "suv";
+  if(/ferrari|lamborghini|mclaren|bugatti|koenigsegg|pagani|aston martin|porsche|lotus|maserati|zenvo|gordon murray|hennessey|ssc|w motors|pininfarina|apollo|de tomaso|gumpert|spyker|noble|ultima|bac|brabham|dallara|saleen|ruf|alpine|nissan|mercedes-amg|chevrolet|dodge|ford|bmw|audi|jaguar|lexus|honda|toyota|mazda|mitsubishi|subaru|abarth|cupra|venturi/.test(make)&&/gt|rs|amg|sport|speed|type r|turbo|gtr|vantage|supra|corvette|viper|mustang|r8|m[2-8]\b|f8|296|812|sf90|huracan|huracán|aventador|revuelto|senna|chiron|veyron|jesko|agera|zonda|huayra|valkyrie|valhalla|artura|\d{3}s|\d{3}lt|f1|p1|911|718|cayman|nsx|evo|wrx|sti|skyline/.test(model)) return "speed";
+  if(/ferrari|lamborghini|mclaren|bugatti|koenigsegg|pagani|lotus|zenvo|gordon murray|hennessey|ssc|w motors|apollo/.test(make)) return "speed";
+  return "road";
+}
 function render() {
   const query = $("search").value.trim().toLowerCase();
   const chosenBrand = $("brandFilter").value;
@@ -368,7 +389,7 @@ function render() {
     return;
   }
   grid.innerHTML=shown.map(c=>`
-    <article class="card" data-skin="${equippedSkin}">
+    <article class="card" data-skin="${equippedSkin}" data-motif="${carMotif(c)}">
       <div class="photo">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div class="placeholder">🚘</div>'}<span class="make-tag">${escapeHtml(c.make)}</span></div>
       <div class="skin-divider" data-emblem="${(REWARD_SKINS.find(s=>s.id===equippedSkin)||REWARD_SKINS[0]).emblem}"></div><div class="card-body"><div class="model">${escapeHtml(c.model)}</div><div class="meta">${c.year?escapeHtml(c.year)+" · ":""}${c.notes?escapeHtml(c.notes):"Fiche de ta collection"}</div><div class="price">${carPriceLabel(c)}</div>
       <div class="card-actions"><button class="small-btn" data-edit="${c.id}">✎ Modifier</button><button class="small-btn delete" data-delete="${c.id}">Supprimer</button></div></div>
@@ -478,7 +499,7 @@ async function searchUsers(q){
 async function loadFriendProfile(username){
   const panel=$("friendProfile");panel.style.display="block";panel.innerHTML='<div class="social-muted">Chargement du profil…</div>';
   try{const p=await api(`/api/users/${encodeURIComponent(username)}/profile`);const st=p.stats;const priced=st.totalValue===null?"—":money(st.totalValue);const brands=st.brands.length?st.brands.map(b=>`<span class="brand-chip">${escapeHtml(b.name)} · ${b.count}</span>`).join(""):'<span class="social-muted">Aucune marque pour le moment.</span>';
-    const publicSkin=REWARD_SKINS.some(s=>s.id===p.displaySkin)?p.displaySkin:"bronze";const emblem=(REWARD_SKINS.find(s=>s.id===publicSkin)||REWARD_SKINS[0]).emblem;const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car" data-skin="${publicSkin}">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="skin-divider" data-emblem="${emblem}"></div><div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${carPriceLabel(c)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
+    const publicSkin=REWARD_SKINS.some(s=>s.id===p.displaySkin)?p.displaySkin:"bronze";const emblem=(REWARD_SKINS.find(s=>s.id===publicSkin)||REWARD_SKINS[0]).emblem;const carCards=p.cars.length?p.cars.map(c=>`<article class="profile-car" data-skin="${publicSkin}" data-motif="${carMotif(c)}">${c.photo?`<img class="zoomable-photo" tabindex="0" role="button" aria-label="Afficher la photo de ${escapeHtml(c.make+" "+c.model)} en grand" src="${c.photo}" alt="${escapeHtml(c.make+" "+c.model)}" style="--photo-zoom:${Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))};--crop-shift-x:${(50-Number(c.cropX??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%;--crop-shift-y:${(50-Number(c.cropY??50))*(Math.max(1,Math.min(2.5,Number(c.cropZoom??1)))-1)*0.5}%">`:'<div style="height:70px;display:grid;place-items:center;font-size:30px">🚘</div>'}<div class="skin-divider" data-emblem="${emblem}"></div><div class="pc-body"><strong>${escapeHtml(c.make)} ${escapeHtml(c.model)}</strong><small>${c.year?escapeHtml(c.year)+" · ":""}${carPriceLabel(c)}</small></div></article>`).join(""):'<div class="social-muted">Cette collection est vide pour le moment.</div>';
     panel.innerHTML=`<div class="social-top"><h4 style="margin:0;display:flex;align-items:center;gap:8px">${p.profilePhoto?`<span class="mini-avatar"><img src="${p.profilePhoto}" alt=""></span>`:`<span class="mini-avatar">👤</span>`} 🏁 Profil de ${escapeHtml(p.username)}</h4><button type="button" class="secondary" id="closeFriendProfile">Fermer</button></div><div class="profile-stats"><div class="profile-stat"><strong>${st.carCount}</strong><span>Voitures</span></div><div class="profile-stat"><strong>${st.brandCount}</strong><span>Marques</span></div><div class="profile-stat"><strong>${priced}</strong><span>Valeur estimée</span></div></div><div class="social-muted">${st.pricedCount} voiture(s) avec un prix renseigné</div><h4 style="margin:13px 0 8px">Marques collectionnées</h4><div class="brand-bars">${brands}</div><h4 style="margin:13px 0 8px">Galerie des voitures</h4><div class="profile-cars">${carCards}</div>`;
     $("closeFriendProfile").onclick=()=>{panel.style.display="none";};
   }catch(e){panel.innerHTML=`<div class="social-muted">${escapeHtml(e.message)}</div>`;}
@@ -587,4 +608,21 @@ $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logou
 .card .skin-divider:before,.profile-car .skin-divider:before{opacity:.55!important;filter:none!important}
 .card .card-body{padding-top:22px}
 .profile-car .skin-divider{margin-bottom:12px!important}
+</style>
+
+<style id="autodex-motifs">
+/* Motifs en filigrane selon le type de voiture : discrets, teintés avec la couleur du skin équipé, plus visibles vers la droite. */
+.card .card-body,.profile-car .pc-body{position:relative;overflow:hidden}
+.card .card-body>*,.profile-car .pc-body>*{position:relative;z-index:1}
+.card .card-body:before,.profile-car .pc-body:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--skin);opacity:.17;
+  -webkit-mask-image:var(--motif,none),linear-gradient(to left,#000 0%,rgba(0,0,0,.18) 90%);
+  mask-image:var(--motif,none),linear-gradient(to left,#000 0%,rgba(0,0,0,.18) 90%);
+  -webkit-mask-size:56px 56px,100% 100%;mask-size:56px 56px,100% 100%;
+  -webkit-mask-repeat:repeat,no-repeat;mask-repeat:repeat,no-repeat;
+  -webkit-mask-composite:source-in;mask-composite:intersect}
+[data-motif="speed"]{--motif:var(--motif-speed)}
+[data-motif="suv"]{--motif:var(--motif-suv)}
+[data-motif="electric"]{--motif:var(--motif-electric)}
+[data-motif="classic"]{--motif:var(--motif-classic)}
+[data-motif="road"]{--motif:var(--motif-road)}
 </style>
